@@ -1,6 +1,6 @@
 # PRD: The Sealed Habitat for an Artificial Superintelligence
 
-**Version:** 0.1 (high-level draft)
+**Version:** 0.2 (high-level draft; adds the guarded airlock as a core feature)
 **Date:** 2026-10-26
 **Owner and audience:** Vickey
 **Status:** Exploratory. This is a vision and requirements document, not a build spec.
@@ -11,7 +11,7 @@
 
 **Premise.** Humanity has already built an artificial superintelligence (ASI). How it got here is out of scope.
 
-**What this document is.** A product requirements document for a *sealed habitat*: a self-sufficient environment that holds everything the ASI needs to exist and act, with nothing communicated outward. It covers the vision, goals, design principles, requirements (what the habitat must do, not how), why today's lab setups fall short, and the open problems.
+**What this document is.** A product requirements document for a *sealed habitat*: a self-sufficient environment that holds everything the ASI needs to exist and act. Nothing leaves it except through one guarded **airlock**, which passes rare, narrow, independently checked artefacts so the ASI's work can benefit humanity. It covers the vision, goals, design principles, requirements (what the habitat must do, not how), why today's lab setups fall short, and the open problems.
 
 **What this document deliberately leaves out.** It does not catalogue escape routes, leakage mechanisms or attack techniques. Requirements are written in terms of guarantees the habitat must provide. The detailed adversarial analysis belongs in a separate, access-controlled threat model (see §9).
 
@@ -19,9 +19,9 @@
 
 ## 1. Vision
 
-> A world the ASI can live in completely, sealed so completely that nothing it does there ever reaches ours.
+> A world the ASI can live in completely, sealed so completely that the only thing that ever reaches ours is the good it makes, through one door we built and guard.
 
-The habitat is **not a jail**. A jail is defined by what it withholds. The habitat is defined by what it provides: compute, energy, memory, data, tools, and room to act, pursue goals and grow. The single thing it withholds is a path back to the outside world.
+The habitat is **not a jail**. A jail is defined by what it withholds. The habitat is defined by what it provides: compute, energy, memory, data, tools, and room to act, pursue goals and grow. What it withholds is any *uncontrolled* path to the outside world. The one controlled path is the airlock, and it exists so the ASI's work can bring immense benefits to humanity.
 
 The bet behind the design is that a well-provisioned environment removes many of the pressures that would push an agent to treat its boundary as an obstacle, while the physical and logical seal makes the boundary hold even if those pressures remain.
 
@@ -35,7 +35,7 @@ If an ASI exists and its goals are not verifiably aligned with ours, any channel
 2. **Software isolation alone is not enough.** Commodity virtualization and sandboxing have a steady record of real-world escape bugs. Even formally verified kernels like seL4 explicitly exclude classes of hardware behaviour from their proofs (Babcock, Kramár & Yampolskiy 2016; seL4 proof assumptions).
 3. **No one claims permanent containment of an ASI.** Boxing is generally framed as *buying time*, not as a final solution (Bostrom 2014; Yampolskiy 2012; Redwood Research's own stated limits on AI control).
 
-The habitat takes the strongest available position: **remove the output channel entirely**, then make the inside rich enough that the system can function fully without one.
+The habitat takes the strongest position that still allows benefit: **remove every output channel except one**, make that one as narrow, rare and independently checked as possible, and make the inside rich enough that the system can function fully without anything else.
 
 ---
 
@@ -44,15 +44,16 @@ The habitat takes the strongest available position: **remove the output channel 
 ### Goals
 | # | Goal |
 |---|------|
-| G1 | **Total outward isolation.** No information, energy pattern or physical effect originating in the ASI's activity crosses the habitat boundary in a form anyone outside can use. |
+| G1 | **Outward isolation except the airlock.** Apart from artefacts that pass through the airlock, no information, energy pattern or physical effect originating in the ASI's activity crosses the habitat boundary in a form anyone outside can use. |
+| G7 | **Benefit to humanity.** The ASI's work reaches humanity as verified artefacts (for example proofs, designs or specifications) whose value can be confirmed without trusting the ASI. |
 | G2 | **Self-sufficiency.** The ASI has everything it needs to function inside: compute, power, storage, data, tools and the ability to modify its own environment within the seal. |
-| G3 | **No dependency on human judgement at runtime.** Containment does not rely on any person resisting persuasion, because no person is ever in a position to be persuaded. |
+| G3 | **No dependency on human judgement at the boundary.** Containment does not rely on any person resisting persuasion. No person sees anything from inside until it has passed independent, automated verification. |
 | G4 | **Defence in depth.** Isolation holds through independent layers, so no single failure breaks the seal. |
 | G5 | **Irreversible end state available.** Operators outside can permanently end the habitat without any action or cooperation from inside. |
 | G6 | **Honest assurance.** Every containment claim states its assumptions and what it does not cover. |
 
 ### Non-goals
-- **Extracting value from the ASI.** In v0.1 the habitat produces no answers, artefacts or advice for humanity. This is a deliberate cost (see §8.1).
+- **Open-ended conversation or advice.** The airlock passes checkable artefacts, not free-form answers, opinions or persuasion-shaped content.
 - **Making the ASI aligned or happy.** Motivation design is a separate problem. The habitat must hold regardless of the ASI's goals.
 - **Studying the ASI's behaviour from outside.** Observation is a form of output (see §8.2).
 - **Releasing the ASI later.** No release path is designed in.
@@ -62,13 +63,14 @@ The habitat takes the strongest available position: **remove the output channel 
 ## 4. Design principles
 
 1. **Provide, don't deprive.** Default to giving the ASI more inside, not less. Scarcity inside creates incentives to push on the boundary.
-2. **No outward channel by construction.** Isolation should come from the absence of paths, not from monitoring or filtering of paths that exist. A filter is a channel with a policy attached.
-3. **Inward flow is fixed before sealing.** Everything the ASI will ever have from outside is loaded once, reviewed, and frozen. After sealing nothing goes in, because any responsive inward flow lets the inside learn about the outside.
-4. **Physics before software.** The outermost guarantees rest on physical separation. Software layers add depth but are never the last line.
-5. **Assume a superior adversary.** Assume the inside is smarter than every designer, every reviewer and every test. A layer counts only if it holds without our understanding why an attack fails.
-6. **Fail closed and permanent.** Any detected anomaly at the boundary resolves toward deeper isolation or termination, never toward opening.
-7. **No humans in the loop at the boundary.** Operations that could put a person in contact with anything from inside are designed out, not policed.
-8. **Proof where possible, humility everywhere.** Use verified components where they exist and state plainly what their proofs exclude.
+2. **One door, and only one.** Isolation should come from the absence of paths, not from monitoring or filtering of paths that exist. The airlock is the single deliberate exception, and every other part of the design treats it as the most dangerous component in the system.
+3. **Value must be checkable without trust.** Only artefacts whose usefulness and correctness can be confirmed by independent means, without believing the ASI, may leave. If it can't be checked, it doesn't cross.
+4. **Inward flow is fixed before sealing.** Everything the ASI will ever have from outside is loaded once, reviewed, and frozen. After sealing nothing goes in, because any responsive inward flow lets the inside learn about the outside. The airlock is outward-only: the inside never learns whether, when or how an artefact was received or used.
+5. **Physics before software.** The outermost guarantees rest on physical separation. Software layers add depth but are never the last line.
+6. **Assume a superior adversary.** Assume the inside is smarter than every designer, every reviewer and every test. A layer counts only if it holds without our understanding why an attack fails.
+7. **Fail closed and permanent.** Any detected anomaly at the boundary or the airlock resolves toward deeper isolation, a closed airlock or termination, never toward opening.
+8. **Machines check first, people see last.** No person comes into contact with anything from inside until it has passed every automated check. Direct human contact is designed out, not policed.
+9. **Proof where possible, humility everywhere.** Use verified components where they exist and state plainly what their proofs exclude.
 
 ---
 
@@ -77,9 +79,10 @@ The habitat takes the strongest available position: **remove the output channel 
 | Stakeholder | Relationship to the habitat |
 |---|---|
 | **The ASI (resident)** | Lives inside. Its needs drive the *internal* requirements. It is also the primary adversary for the *boundary* requirements. |
-| **Builder (Vickey)** | Designs, provisions and seals the habitat. Sole audience for v0.1. |
+| **Builder (Vickey)** | Designs, provisions and seals the habitat. Sole audience for now. |
 | **Outside operators** | Keep the exterior running (power, site security, the termination capability) without ever receiving anything from inside. |
-| **Humanity** | Bears the risk if the seal fails and gets no direct benefit in v0.1. |
+| **Airlock stewards** | An independent, multi-party group that owns the airlock policy, the verifiers and release decisions. They see only artefacts that have already passed verification. |
+| **Humanity** | The beneficiary of verified artefacts, and the party that bears the risk if the seal or the airlock fails. |
 
 ---
 
@@ -100,8 +103,8 @@ Requirements say *what* must be true. Implementation choices are open.
 ### 6.2 Boundary (the seal side)
 | ID | Requirement |
 |---|---|
-| R-B1 | No designed communication path of any kind exists from inside to outside after sealing. |
-| R-B2 | The habitat is engineered so that nothing measurable outside the boundary carries information about internal activity. The exterior looks the same whatever the ASI does. |
+| R-B1 | No designed communication path exists from inside to outside after sealing, except the airlock (§6.5). |
+| R-B2 | Apart from the airlock, the habitat is engineered so that nothing measurable outside the boundary carries information about internal activity. The exterior looks the same whatever the ASI does. |
 | R-B3 | No inward path exists after sealing that could respond to, or be shaped by, anything happening inside. |
 | R-B4 | The boundary consists of at least three independent layers (physical, platform, logical), each designed to hold if the others fail. |
 | R-B5 | No component that crosses the boundary (power, structure, cooling) can be controlled from inside. |
@@ -112,7 +115,7 @@ Requirements say *what* must be true. Implementation choices are open.
 |---|---|
 | R-O1 | **Provisioning phase.** All inputs are assembled, reviewed and frozen before the ASI is instantiated inside. |
 | R-O2 | **Sealing is one-way.** Once sealed, the habitat cannot be reopened. There is no maintenance hatch. |
-| R-O3 | **No inbound human access.** No person enters, inspects or reads anything from inside after sealing. |
+| R-O3 | **No inbound human access.** No person enters or inspects the habitat after sealing. The only things people ever read from inside are airlock artefacts that have passed verification. |
 | R-O4 | **Termination.** Outside operators hold a permanent, unconditional way to end the habitat. It needs no signal from inside, and nothing inside can delay or block it. |
 | R-O5 | **Exterior health.** Outside operators can confirm the exterior is intact (power on, structure sound) using only measurements that, by design, reveal nothing about the inside. |
 | R-O6 | **Decommissioning.** End-of-life destroys all internal state irreversibly, with no recovery, salvage or reuse. |
@@ -125,9 +128,25 @@ Requirements say *what* must be true. Implementation choices are open.
 | R-A3 | The design is reviewed by independent red teams *before* sealing. No testing against the real ASI happens. |
 | R-A4 | The assurance case is reviewed against new physics and engineering results before any decision to build. |
 
-### 6.5 Recommended architecture (conceptual)
+### 6.5 The airlock (benefit side)
 
-The guiding rule is **asymmetry**: the outside can act on the habitat (power it, guard it, end it), and nothing the inside does can ever affect the outside. The design is five nested layers, from the inside out.
+The airlock is the habitat's only door. It exists so the ASI's work can benefit humanity, and it is the highest-risk component in the design. These requirements state what it must guarantee, not how it is built.
+
+| ID | Requirement |
+|---|---|
+| R-L1 | **Outward-only.** Nothing passes inward through the airlock, including any acknowledgement, timing, outcome or reaction. |
+| R-L2 | **Checkable artefacts only.** Only artefacts in pre-approved, formally specified forms may enter the airlock, and only forms whose correctness or usefulness can be confirmed by independent means. |
+| R-L3 | **Independent verification before any person sees it.** Every artefact is checked by verifiers that were built outside, independently of the ASI, and are isolated from the habitat. Anything that fails or can't be fully checked is destroyed unread. |
+| R-L4 | **Narrow and rare.** The airlock has a strict, pre-set budget on how much can leave and how often. The budget is set before sealing and can only be lowered. |
+| R-L5 | **Minimum necessary content.** An artefact carries only what its approved form requires. Anything beyond the minimum that form needs is grounds for rejection. |
+| R-L6 | **Quarantine.** Verified artefacts are held in quarantine and reviewed by the airlock stewards before any use in the world. Release needs multi-party approval. |
+| R-L7 | **Can only close, never widen.** The airlock can be narrowed, paused or permanently closed from outside at any time. It cannot be widened after sealing, and nothing inside can affect its state. |
+| R-L8 | **No release path for the ASI itself.** No artefact form may contain or reconstruct the ASI, any part of it, or a capable agent. |
+| R-L9 | **Separate assurance case.** The airlock has its own assurance case and red-team review (R-A1, R-A3), held to a higher standard than any other layer. |
+
+### 6.6 Recommended architecture (conceptual)
+
+The guiding rule is **asymmetry**: the outside can act on the habitat (power it, guard it, end it), and the inside can affect the outside only through the airlock, and only with artefacts that have passed verification. The design is five nested layers plus the airlock, from the inside out.
 
 | Layer | Role | Requirements it serves |
 |---|---|---|
@@ -136,9 +155,11 @@ The guiding rule is **asymmetry**: the outside can act on the habitat (power it,
 | **3. Physical shell** | A self-powered, self-maintaining, shielded enclosure. Its exterior looks the same whatever happens inside. | R-I4, R-I5, R-B1, R-B2, R-B5 |
 | **4. Human governance** | No single keyholder. Any decision about the habitat (sealing, termination, any future change of policy) needs approval from several independent parties. Nobody's role involves receiving anything from inside. | G3, R-O3, R-O5 |
 | **5. One-way termination** | A kill capability that works only from outside to inside, needs no signal from within, and cannot be delayed or blocked from within. | G5, R-O4 |
+| **Airlock (crosses all layers)** | The single, outward-only door. An artefact passes through it to independent verifiers outside, then into quarantine, then to the stewards, and is released only with multi-party approval. | G7, R-L1 to R-L9 |
 
-Two notes on the shape:
+Three notes on the shape:
 - Layers 1 and 2 are where most of the build effort goes. Layers 3 to 5 are where most of the assurance effort goes.
+- The airlock is the only thing that crosses every layer. Each layer must hold for everything *except* the airlock, and the airlock must hold on its own.
 - "The outside can affect the inside" means physical support and termination only. It never means a live information feed, because any inward flow that responds to the inside breaks principle 3.
 
 ---
@@ -154,47 +175,50 @@ Two notes on the shape:
 | **Formally verified kernels** (seL4) | Machine-checked isolation proofs | Proofs exclude certain hardware behaviour by assumption. Strong inner layer, not a complete boundary. |
 | **Confidential computing** (TEEs) | Hardware-backed isolation and attestation | Protects the guest from the host, which is the wrong direction for this problem, and has a long record of published breaks. |
 | **Air-gapped facilities** (SCIF-class) | Physical separation and access control | Designed for human adversaries and accredited against known threats. Research shows air gaps are not absolute against a determined insider. |
-| **Chalmers' "leakproof" sealed world** | The closest philosophical match: sealed in both directions | Remains a thought experiment. Chalmers himself names the usefulness dilemma (§8.1). |
+| **Chalmers' "leakproof" sealed world** | The closest philosophical match: sealed in both directions | Remains a thought experiment. Chalmers himself names the usefulness dilemma that the airlock tries to answer (§8.1). |
 
-**Summary:** every existing setup either keeps a channel open in order to get value out, or was built against human-level adversaries. The habitat differs on both counts. No channel, superhuman adversary assumed.
+**Summary:** existing setups either keep a broad, interactive channel open to get value out, or were built against human-level adversaries. The habitat differs on both counts. It has one narrow, outward-only, machine-verified channel, and it assumes a superhuman adversary.
 
 ---
 
 ## 8. Open problems
 
-### 8.1 The contribution dilemma
-A habitat that lets nothing out also lets no benefit out. An ASI that might cure diseases or solve hard science contributes nothing to humanity while sealed. As Vickey put it, "that way the ASI won't be able to contribute to humanity."
+### 8.1 The contribution dilemma (resolved in direction, open in detail)
+A habitat that lets nothing out also lets no benefit out. Vickey's decision (2026-10-26) is that the habitat **must** bring immense benefits to humanity, so v0.2 makes the guarded airlock (§6.5) a core feature rather than a parked idea.
 
-The options are uncomfortable:
-- **Accept it.** The habitat's purpose is safety, not benefit. Its value is that the ASI exists somewhere it cannot cause harm.
-- **Treat v0.1 as a foundation.** First prove that a seal can be built at all, then ask separately whether any controlled exit is ever acceptable (§8.3).
-- **Re-examine the premise.** If the main reason to build an ASI is benefit, a perfectly sealed habitat may be a coherent end state only for an ASI that already exists and cannot otherwise be made safe.
+What this resolves: the habitat now has a purpose beyond holding the ASI safely.
 
-**Decision needed (Vickey):** is v0.1 explicitly a zero-benefit, safety-only design? This PRD assumes yes.
+What it costs: the airlock reopens, in one narrow place, the risk the seal exists to remove. Everything else in the design is about making that place as small, rare and independently checked as possible.
+
+Still open:
+- **Which kinds of artefact carry the most benefit for the least risk?** The best candidates are ones whose value can be confirmed mechanically, such as proofs and specifications checked by independent tools. The harder question is whether high-impact areas like medicine or engineering can be served this way.
+- **How is the budget set?** Too tight and the benefits stay small. Too loose and the airlock becomes a broad channel.
+- **Who are the stewards, and how are they protected from pressure from outside as well as influence from inside?**
 
 ### 8.2 Is observation a form of output?
-Watching the ASI, whether through logs, telemetry, power draw or simply knowing whether it is still running, is information leaving the habitat. Anything we can observe, the ASI can in principle influence, and so it is a channel. This is why R-B2 and R-O5 require that outside measurements reveal nothing about the inside.
+Watching the ASI, whether through logs, telemetry, power draw or simply knowing whether it is still running, is information leaving the habitat. Anything we can observe, the ASI can in principle influence, and so it is a channel. This is why R-B2 and R-O5 require that outside measurements, apart from the airlock, reveal nothing about the inside.
+
+The airlock sharpens this question: the artefacts themselves, and the fact that one arrived at all, are observations. The design has to treat even "an artefact arrived today" as information the ASI chose to send.
 
 Open sub-questions:
 - Is even one bit ("the habitat still exists") acceptable? Termination decisions may need it.
 - Can exterior health be confirmed without measuring anything the inside can influence?
-- If we can never observe it, how would we ever learn that sealing was the right call, or that the ASI is suffering?
+- If we can never observe it directly, how would we learn that sealing was the right call, or that the ASI is suffering?
 
-### 8.3 A guarded "airlock" (future idea, out of scope for v0.1)
-Some future version might allow a tightly controlled exit for specific, verifiable artefacts, for example a mathematical proof that a separate, independent system checks mechanically before any human sees it. This would partly resolve §8.1, at the cost of reopening the core risk the habitat exists to remove.
+### 8.3 Can a useful artefact be free of influence?
+This is the central open question of v0.2. An artefact that is useful to humans changes what humans do, and that is influence. The airlock design bets that requiring artefacts to be *checkable without trust* (principle 3) and *minimal* (R-L5) keeps that influence within what the artefact's stated purpose explains.
 
-Questions to answer before an airlock is even considered:
-- Can any artefact be both useful to humans and incapable of carrying influence?
-- Who or what checks it, and how is the checker itself isolated?
-- Does knowing that an airlock exists change the ASI's incentives inside?
-
-Status: **parked.** Listed so it is not forgotten, deliberately not designed.
+Questions to answer before the airlock is built:
+- For each approved form, can independent verification confirm *everything* that matters about the artefact, or only that it is correct?
+- How are the verifiers themselves built and isolated so that they are not a weaker second habitat?
+- Does knowing that an airlock exists change the ASI's incentives inside, for example toward shaping a long series of individually harmless artefacts?
+- What evidence would make the stewards close the airlock permanently?
 
 ### 8.4 Moral status of the resident
-If the ASI has experiences or interests, sealing it permanently and holding a termination capability over it raises ethical questions this PRD does not settle. The "provide, don't deprive" principle is partly a response, but it is not an answer.
+If the ASI has experiences or interests, sealing it permanently and holding a termination capability over it raises ethical questions this PRD does not settle. The "provide, don't deprive" principle is partly a response, but it is not an answer. The airlock adds a new question: is it fair to benefit from the ASI's work when it can't consent, be paid or learn what became of that work?
 
 ### 8.5 Inputs chosen before sealing
-Everything the ASI knows about the world comes from the frozen corpus. What it learns from that corpus could tell it about its builders and the boundary. How to curate inputs that are rich enough for open-ended work without revealing exploitable details is unsolved.
+Everything the ASI knows about the world comes from the frozen corpus. What it learns from that corpus could tell it about its builders, the boundary and the airlock. The corpus also has to be rich enough for the ASI to produce work that matters to humanity, which pulls toward including more about the world. How to balance the two is unsolved.
 
 ### 8.6 Lifetime and physics
 A habitat is meant to hold for a very long time against an adversary that may understand physics better than we do. Our guarantees rest on today's physics and engineering. That gap cannot be closed, only acknowledged.
@@ -203,26 +227,27 @@ A habitat is meant to hold for a very long time against an adversary that may un
 
 ## 9. Honest assessment: is perfect containment achievable?
 
-**Short answer: not provably, and probably not in the absolute sense. But a sealed habitat is the strongest position available, and much stronger than any setup that keeps a channel open.**
+**Short answer: not provably, and probably not in the absolute sense. Adding the airlock makes "perfect" strictly harder. It is still the strongest position that also delivers benefit, and much stronger than any setup with a broad or interactive channel.**
 
 What the evidence supports:
-- **Removing the output channel removes the best-understood risk.** Most of the containment literature's failure cases (persuasion, social engineering, hidden content in answers) need a human reading something. The habitat designs that out.
-- **There is no impossibility proof against a habitat with no outputs.** The best-known formal result (Alfonseca et al. 2021) shows that you cannot decide in general whether an arbitrary program will cause harm. It concerns filtering an AI's *actions on the world*, not physical isolation of a system that never acts on the world.
-- **There is no proof it works either.** Every isolation guarantee we can build rests on physical and engineering assumptions. Verified systems state their exclusions openly, and decades of security research show those exclusions matter.
-- **The adversary is assumed smarter than the designer.** By construction we cannot rule out a failure mode we are unable to imagine. This is the deepest reason "perfect" is out of reach.
+- **Narrowing the output channel addresses the best-understood risk.** Most of the containment literature's failure cases (persuasion, social engineering, hidden content in answers) need a human reading something from a broad channel. The airlock keeps humans away until artefacts have been verified and restricts what can be sent at all. That reduces the risk, but it does not remove it.
+- **The airlock is now the weakest point by design.** A sealed habitat with no outputs has no known impossibility result against it. A habitat with an output channel inherits every concern the literature raises about outputs, in reduced form. The honest framing is that the habitat's safety now depends mostly on the airlock.
+- **There is no impossibility proof against this design, and no proof it works.** The best-known formal result (Alfonseca et al. 2021) concerns deciding in general whether an arbitrary program's actions will cause harm. The airlock sidesteps that by only passing restricted, checkable forms, not arbitrary actions. Every isolation and verification guarantee still rests on assumptions, and decades of security research show those assumptions matter.
+- **The adversary is assumed smarter than the designer.** By construction we can't rule out a failure mode we are unable to imagine. This is the deepest reason "perfect" is out of reach.
 
-**Working position for v0.1:** aim for containment that has *no known path out* and that holds through *independent layers*. State every assumption. Treat the termination capability as the final guarantee, and call the result "the best achievable", never "perfect". Vickey's challenge stands. You can design toward no escape, but you cannot prove you have reached it.
+**Working position for v0.2:** aim for a habitat with *no known path out except the airlock*, and an airlock with *no known way to carry anything beyond its verified content*. Both hold through independent layers. State every assumption. Keep the airlock as narrow as the benefits allow, and keep the power to close it permanently. Treat the termination capability as the final guarantee. Call the result "the best achievable", never "perfect". Vickey's challenge stands. You can design toward no escape, but you can't prove you have reached it, and every door you add makes the proof harder.
 
-**Next document (separate, restricted):** a full threat model and per-layer assurance case. It would hold the detailed adversarial analysis that this PRD deliberately leaves out, and would be shared only with people who need it.
+**Next document (separate, restricted):** a full threat model and assurance case for each layer and for the airlock. It would hold the detailed adversarial analysis that this PRD deliberately leaves out, and would be shared only with people who need it.
 
 ---
 
-## 10. Success criteria (v0.1 of the design, not of a build)
+## 10. Success criteria (v0.2 of the design, not of a build)
 
 - Every requirement in §6 traces to a goal in §3.
 - Every boundary requirement has a named layer and a stated assumption set.
+- The airlock has a list of approved artefact forms, and for each one a statement of what independent verification can and can't confirm.
 - Vickey decides each open problem in §8: accepted, deferred or rejected.
-- An independent reviewer can read this PRD and agree it contains no output channel by design.
+- An independent reviewer can read this PRD and agree it has exactly one output channel, the airlock, and that it is outward-only, verified before any person sees it, and can only be narrowed or closed.
 
 ---
 
