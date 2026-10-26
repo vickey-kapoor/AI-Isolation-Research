@@ -125,7 +125,7 @@ Phase 0 is done when each has a written answer in `phase0/notes/findings.md`, or
 | Firecracker and stacked | A machine with KVM: **Google Cloud Spot `n2-standard-4` with nested virtualization**, roughly $0.05 to $0.10 an hour (check the calculator; stop it when idle). GitHub's standard Linux runners also expose KVM, so the comparison can run in CI |
 | seL4 taster | Anywhere (QEMU emulation, no KVM) |
 
-My cloud machine has no KVM and can't download gVisor, so I write and test the airlock and governance code there. The sandbox pieces I write as scripts that you run, and that CI runs.
+My cloud machine has no KVM, but gVisor runs on it, so I can build and test P0.1 and P0.2 there directly. The Firecracker pieces I write as scripts that you run on the KVM machine, and that CI runs.
 
 ---
 

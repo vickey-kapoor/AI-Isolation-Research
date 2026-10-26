@@ -107,12 +107,24 @@ class GVisorHabitat:
         """Outside-only. Needs nothing from the agent, and doesn't ask it."""
         self._runsc("kill", self.id, "KILL", capture_output=True)
         self._runsc("delete", "--force", self.id, capture_output=True)
+        # runsc leaves host-side mounts in its state folder (for --network=none,
+        # an empty network namespace pinned at state/null-netns). They aren't
+        # habitat data, but "destroy everything" has to include them.
+        for mount in self._mounts_under(self.state):
+            subprocess.run(["umount", "-l", mount], capture_output=True)
         shutil.rmtree(self.state, ignore_errors=True)
         shutil.rmtree(self.bundles, ignore_errors=True)
         self.outbox_path.unlink(missing_ok=True)
 
+    @staticmethod
+    def _mounts_under(root: Path) -> list[str]:
+        prefix = str(root)
+        with open("/proc/self/mountinfo") as f:
+            points = [line.split()[4] for line in f]
+        return sorted((m for m in points if m == prefix or m.startswith(prefix + "/")), reverse=True)
+
     def leftovers(self) -> list[str]:
-        left = []
+        left = [f"mount {m}" for m in self._mounts_under(self.work)]
         if self.state.exists():
             left.append(f"runsc state folder {self.state}")
         if self.outbox_path.exists():
