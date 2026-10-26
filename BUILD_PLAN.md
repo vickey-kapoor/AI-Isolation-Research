@@ -124,6 +124,8 @@ v0.1 needs no special hardware and no GPU. QEMU emulates the ARM board in softwa
 | Steward keys | key files on disk (dev only) | three hardware security keys (e.g. YubiKeys) from M6 | Each steward's signing key on its own device |
 | Real board | not needed for v0.1 | an seL4-supported dev board after v0.1 | Choose from the seL4 supported-platforms list for the architecture picked in §12 |
 
+**Decision (2026-10-26):** Vickey develops in the cloud, not on a laptop. Default: a **GitHub Codespace** (4-core / 16 GB machine type) built from `prototype/.devcontainer/`, so the same container serves the Codespace, CI and any later VM. If monthly usage outgrows the Codespaces quota, move to a single 4 vCPU / 16 GB VM using the same dev container. Stop the Codespace or VM when not in use.
+
 Explicitly **not** needed for v0.1: GPUs, data-centre space, shielding, dedicated facilities, or network infrastructure beyond what CI already uses.
 
 ---
