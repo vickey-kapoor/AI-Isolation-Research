@@ -1,0 +1,47 @@
+name: phase0
+
+on:
+  push:
+    paths: ["phase0/**", ".github/workflows/phase0.yml"]
+  pull_request:
+    paths: ["phase0/**", ".github/workflows/phase0.yml"]
+
+jobs:
+  airlock:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -t . -v
+      - run: python -m airlock.demo
+
+  gvisor:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Install runsc and build the rootfs
+        run: ./sandboxes/setup_gvisor.sh "$RUNNER_TEMP/rootfs"
+      - name: Run the habitat under gVisor
+        run: sudo "$(which python)" -m sandboxes.run_gvisor --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/work"
+      - name: Show runsc logs on failure
+        if: failure()
+        run: sudo GVISOR_DEBUG=1 "$(which python)" -m sandboxes.run_gvisor --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/work-debug" || sudo find "$RUNNER_TEMP/work-debug/runsc-logs" -type f -exec tail -n 40 {} +
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gvisor-report
+          path: ${{ runner.temp }}/work/report.json
+          if-no-files-found: ignore
