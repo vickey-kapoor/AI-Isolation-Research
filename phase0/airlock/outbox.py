@@ -1,9 +1,9 @@
 """The one-way outbox: a file of fixed-size slots.
 
-The agent writes slots in a ring, round and round. The gate reads slots on
+The puzzle program writes slots in a ring, round and round. The gate reads slots on
 its own timer and never writes, clears or marks anything. That means the
-agent cannot tell whether, when or how often a slot was read (PRD R-L1,
-principle 4). It also means the agent can't know when a slot is "free", so
+puzzle program cannot tell whether, when or how often a slot was read (PRD R-L1,
+principle 4). It also means the puzzle program can't know when a slot is "free", so
 it simply keeps rewriting, and the gate drops duplicates on its side.
 
 What this still relies on: the host kernel and filesystem not leaking reads

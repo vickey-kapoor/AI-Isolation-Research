@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install gVisor's runsc and build a minimal root filesystem for the agent.
+# Install gVisor's runsc and build a minimal root filesystem for the puzzle program.
 # Works on any x86_64 or arm64 Linux machine; no KVM needed.
 #
 #   ./sandboxes/setup_gvisor.sh [ROOTFS_DIR]

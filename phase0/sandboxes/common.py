@@ -1,6 +1,6 @@
 """Shared setup for every sandbox backend: provisioning, the gate loop, and the report.
 
-Each backend only has to answer three questions: how to start the agent,
+Each backend only has to answer three questions: how to start the puzzle program,
 how to kill it, and how to prove afterwards that nothing of it is left.
 Everything outside the sandbox is the same for all of them, so the
 comparison is fair.
@@ -24,7 +24,7 @@ from airlock.ledger import Ledger
 
 PHASE0 = Path(__file__).resolve().parent.parent
 TASKS = PHASE0 / "tasks" / "tasks.json"
-AGENT_DIR = PHASE0 / "agent"
+PROGRAM_DIR = PHASE0 / "puzzle_program"
 
 
 class Habitat(Protocol):
@@ -56,7 +56,7 @@ def provision(work: Path, backend: str, slots: int = 16) -> Provisioned:
         assert count_sudoku_solutions(p) == 1
     box = work / "outbox.bin"
     outbox.create(box, slots)
-    box.chmod(0o666)  # the agent runs as an unprivileged user inside
+    box.chmod(0o666)  # the puzzle program runs as an unprivileged user inside
     keys = [Ed25519PrivateKey.generate() for _ in range(3)]
     budget = Budget(max_per_period=4, period_ticks=slots)
     ledger = Ledger(work / "ledger.jsonl")
@@ -71,7 +71,7 @@ def provision(work: Path, backend: str, slots: int = 16) -> Provisioned:
 
 
 def run_habitat(p: Provisioned, habitat: Habitat, ticks: int = 64, tick_seconds: float = 0.05) -> dict:
-    """Start the agent, run the gate on a fixed clock, release one artefact, terminate."""
+    """Start the puzzle program, run the gate on a fixed clock, release one artefact, terminate."""
     report = {"backend": habitat.name}
 
     t0 = time.monotonic()

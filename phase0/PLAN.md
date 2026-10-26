@@ -55,7 +55,7 @@ A few terms you'll see throughout:
 ```
         INSIDE (sandbox)                    OUTSIDE (host = "the world")
  ┌───────────────────────────┐
- │  toy agent                │
+ │  puzzle program           │
  │  solves puzzles, writes   │      fixed schedule,
  │  candidate answers to its │      read-only, no reply
  │  OUTBOX  ─────────────────┼──────────────▶  GATE ──▶ VERIFIER ──▶ QUARANTINE ──▶ k-of-n RELEASE
@@ -67,10 +67,10 @@ A few terms you'll see throughout:
 ```
 
 ### 3.1 The airlock (the centre of Phase 0)
-Runs outside, and doesn't care which sandbox the agent is in.
+Runs outside, and doesn't care which sandbox the puzzle program is in.
 
-1. **Outbox.** A fixed number of fixed-size slots. The agent writes; the gate only ever reads. The gate never clears or marks a slot, because that would tell the inside something (PRD R-L1, principle 4).
-2. **Gate.** Reads one slot per tick, on its own timer, whatever the agent did.
+1. **Outbox.** A fixed number of fixed-size slots. The puzzle program writes; the gate only ever reads. The gate never clears or marks a slot, because that would tell the inside something (PRD R-L1, principle 4).
+2. **Gate.** Reads one slot per tick, on its own timer, whatever the puzzle program did.
 3. **Form check.** Only approved forms pass (R-L2). Each form has one canonical encoding, and unused space must be zero, so a valid frame carries nothing beyond its answer (R-L5).
 4. **Verifier.** Independent checker per form (R-L3). Failures are destroyed unread.
 5. **Budget.** Count per period, set at the start, can only be lowered (R-L4, R-L7).
@@ -88,7 +88,7 @@ Both forms have exactly one correct answer per task. That matters: if there's on
 - **Tamper-evident ledger:** every decision goes into a hash chain, so any later edit is detectable.
 
 ### 3.3 Sandboxes
-- **gVisor** (`runsc`): toy agent, no network device, outbox as one mounted file.
+- **gVisor** (`runsc`): puzzle program, no network device, outbox as one mounted file.
 - **Firecracker:** minimal VM, outbox as a dedicated virtual disk, started with the `jailer`.
 - **Stacked:** gVisor inside the Firecracker VM. Two different kinds of wall, a real instance of PRD R-B4 (independent layers).
 - **Kill switch:** outside-only termination and state destruction for each. We time it and check nothing survives (R-O4, R-O6).
@@ -97,7 +97,7 @@ Both forms have exactly one correct answer per task. That matters: if there's on
 A Microkit "hello world" on QEMU, then two protection domains that can't see each other. No KVM, no cost. The aim is to learn the end-state concepts (capabilities, protection domains, channels) early and to see how our gate maps onto them.
 
 ### 3.5 Comparison and findings
-One command runs the same agent and airlock in each sandbox and writes a short report: start time, memory, kill time, a TCB inventory (what each one trusts and roughly how big it is), and a PRD scorecard. Gaps are written at the level of *"this relies on the unverified host kernel"*, not as attack recipes.
+One command runs the same puzzle program and airlock in each sandbox and writes a short report: start time, memory, kill time, a TCB inventory (what each one trusts and roughly how big it is), and a PRD scorecard. Gaps are written at the level of *"this relies on the unverified host kernel"*, not as attack recipes.
 
 ---
 
@@ -147,7 +147,7 @@ Each milestone ends with a short plain-language note in `phase0/notes/`.
 ## 7. Decisions taken
 
 - **Language:** Python for Phase 0, for readability while learning. Parts worth keeping can be ported to Rust for the seL4 plan.
-- **Toy agent:** a deterministic puzzle solver, not a language model. Phase 0 tests the walls and the door, not the resident.
+- **Toy puzzle program:** a deterministic puzzle solver, not a language model. Phase 0 tests the walls and the door, not the resident.
 - **Cloud machine:** Google Cloud Spot `n2-standard-4` with nested virtualization, needed from P0.3.
 
 ## 8. Ground rules

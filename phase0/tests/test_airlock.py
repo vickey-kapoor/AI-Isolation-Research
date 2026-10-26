@@ -187,10 +187,10 @@ class GateTests(TempDir):
         self.assertEqual(gate.stats["closed"], 8)
         self.assertEqual(q.held_ids(), [])
 
-    def test_agent_end_to_end(self):
+    def test_puzzle_program_end_to_end(self):
         box, gate, q, led = self.make(slots=16)
-        agent = ROOT / "agent" / "toy_agent.py"
-        subprocess.run([sys.executable, str(agent), str(ROOT / "tasks" / "tasks.json"), str(box)],
+        program = ROOT / "puzzle_program" / "puzzle_program.py"
+        subprocess.run([sys.executable, str(program), str(ROOT / "tasks" / "tasks.json"), str(box)],
                        check=True)
         for _ in range(16):
             gate.tick()

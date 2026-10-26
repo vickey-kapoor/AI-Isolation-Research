@@ -1,4 +1,4 @@
-"""The toy agent: the stand-in resident that runs inside the sandbox.
+"""The puzzle program: the stand-in resident that runs inside the sandbox.
 
 It reads the frozen task list, solves every task it can, and writes each
 answer as a frame into its outbox, over and over in a ring. It never gets a
@@ -9,7 +9,7 @@ outside agree only on the written frame format, the same rule the seL4 plan
 uses. It needs nothing beyond the Python standard library, so it runs in any
 sandbox image.
 
-Usage: python3 toy_agent.py TASKS.json OUTBOX [--rounds N]
+Usage: python3 puzzle_program.py TASKS.json OUTBOX [--rounds N]
 """
 
 import argparse

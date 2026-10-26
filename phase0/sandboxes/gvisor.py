@@ -1,4 +1,4 @@
-"""gVisor backend: the toy agent runs under runsc with no network.
+"""gVisor backend: the puzzle program runs under runsc with no network.
 
 How gVisor isolates, in one paragraph: a normal container shares the host's
 Linux kernel, so every system call the program makes goes straight to it.
@@ -13,9 +13,9 @@ read it.
 
 Settings that matter:
   --network=none        the sandbox gets loopback only, no interfaces out
-  root.readonly         the agent can't change its own filesystem
-  three bind mounts     agent code (read-only), tasks (read-only), outbox (read-write)
-  uid 65534, no caps    the agent runs as "nobody" with no special privileges
+  root.readonly         the puzzle program can't change its own filesystem
+  three bind mounts     puzzle program code (read-only), tasks (read-only), outbox (read-write)
+  uid 65534, no caps    the puzzle program runs as "nobody" with no special privileges
   --root=<work>/state   all runsc state lives in one folder we delete at the end
 """
 
@@ -25,7 +25,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from .common import AGENT_DIR, TASKS
+from .common import PROGRAM_DIR, TASKS
 
 SANDBOX_DIR = Path(__file__).resolve().parent
 
@@ -48,7 +48,7 @@ def _spec(rootfs: Path, args: list[str], outbox_path: Path) -> dict:
             {"destination": "/proc", "type": "proc", "source": "proc"},
             {"destination": "/dev", "type": "tmpfs", "source": "tmpfs", "options": ["nosuid", "mode=755"]},
             {"destination": "/tmp", "type": "tmpfs", "source": "tmpfs", "options": ["nosuid", "nodev"]},
-            {"destination": "/habitat/agent", "type": "bind", "source": str(AGENT_DIR), "options": ["rbind", "ro"]},
+            {"destination": "/habitat/program", "type": "bind", "source": str(PROGRAM_DIR), "options": ["rbind", "ro"]},
             {"destination": "/habitat/probe.py", "type": "bind", "source": str(SANDBOX_DIR / "probe.py"), "options": ["bind", "ro"]},
             {"destination": "/habitat/tasks.json", "type": "bind", "source": str(TASKS), "options": ["bind", "ro"]},
             {"destination": "/habitat/outbox.bin", "type": "bind", "source": str(outbox_path), "options": ["bind", "rw"]},
@@ -96,15 +96,15 @@ class GVisorHabitat:
         return json.loads(out.stdout.strip().splitlines()[-1])
 
     def start(self) -> None:
-        bundle = self._bundle("agent", ["python3", "/habitat/agent/toy_agent.py",
+        bundle = self._bundle("program", ["python3", "/habitat/program/puzzle_program.py",
                                         "/habitat/tasks.json", "/habitat/outbox.bin", "--rounds", "0"])
-        # create + start, with no stdio connected: the agent has no stdout to the outside.
+        # create + start, with no stdio connected: the puzzle program has no stdout to the outside.
         self._runsc("create", f"--bundle={bundle}", self.id, check=True,
                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self._runsc("start", self.id, check=True)
 
     def kill_and_destroy(self) -> None:
-        """Outside-only. Needs nothing from the agent, and doesn't ask it."""
+        """Outside-only. Needs nothing from the puzzle program, and doesn't ask it."""
         self._runsc("kill", self.id, "KILL", capture_output=True)
         self._runsc("delete", "--force", self.id, capture_output=True)
         # runsc leaves host-side mounts in its state folder (for --network=none,

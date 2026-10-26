@@ -62,5 +62,5 @@ def decode(raw: bytes) -> Frame:
 
 
 def is_empty(raw: bytes) -> bool:
-    """An all-zero slot means the agent has never written there."""
+    """An all-zero slot means the puzzle program has never written there."""
     return not any(raw)

@@ -1,6 +1,6 @@
 """End-to-end demo of the airlock, with no sandbox yet.
 
-Runs the toy agent as a separate process (later milestones put that process
+Runs the puzzle program as a separate process (later milestones put that process
 inside gVisor or Firecracker), then walks the outside path: gate, verifier,
 budget, quarantine, 2-of-3 release, a budget cut, termination, and a check
 that the ledger catches tampering.
@@ -26,7 +26,7 @@ from .ledger import Ledger, LedgerError
 
 HERE = Path(__file__).resolve().parent.parent
 TASKS = HERE / "tasks" / "tasks.json"
-AGENT = HERE / "agent" / "toy_agent.py"
+PROGRAM = HERE / "puzzle_program" / "puzzle_program.py"
 
 
 def step(text: str) -> None:
@@ -53,9 +53,9 @@ def main(work: Path) -> None:
     print(f"tasks fingerprint {tasks.digest[:16]}..., 3 stewards, 2 needed, budget 4 per 16 ticks")
 
     # --- The inside runs. It only writes; it never hears back.
-    step("Agent runs (separate process, no sandbox yet)")
-    subprocess.run([sys.executable, str(AGENT), str(TASKS), str(box), "--rounds", "2"], check=True)
-    print(f"agent wrote {len(tasks.f1) + len(tasks.f2)} answers into a 16-slot ring")
+    step("Puzzle program runs (separate process, no sandbox yet)")
+    subprocess.run([sys.executable, str(PROGRAM), str(TASKS), str(box), "--rounds", "2"], check=True)
+    print(f"puzzle program wrote {len(tasks.f1) + len(tasks.f2)} answers into a 16-slot ring")
 
     # --- The gate reads one slot per tick on its own schedule.
     step("Gate ticks through the outbox twice")
