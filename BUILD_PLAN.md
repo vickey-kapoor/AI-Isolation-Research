@@ -112,6 +112,20 @@ Each choice records the decision, the reason, and the fallback.
 
 **Pinning.** The dev container pins exact versions of the Microkit SDK, Rust toolchain (`rust-toolchain.toml`), cross compiler and QEMU. The seal manifest (§7.1) records all of them.
 
+### 3.1 Hardware, infrastructure and cloud requirements
+
+v0.1 needs no special hardware and no GPU. QEMU emulates the ARM board in software (TCG), so no virtualisation extensions are required.
+
+| Need | Minimum | Recommended | Notes |
+|---|---|---|---|
+| Dev machine | 4 cores, 8 GB RAM, 30 GB free disk | 4–8 cores, 16 GB RAM, 50 GB free disk | Linux, or macOS / Windows with Docker. x86_64 or ARM64 both work |
+| Cloud alternative | one 4 vCPU / 16 GB Linux VM | same, with a 50 GB disk | e.g. AWS m7i.xlarge or Graviton m7g.xlarge, or the GCP / Azure equivalent; roughly $0.15–0.20 per hour. No public inbound ports; reach it over SSH or use a Codespace |
+| CI | GitHub Actions standard runners | same | One full run (images + QEMU system tests + e2e) should fit well within free-tier minutes for a single builder |
+| Steward keys | key files on disk (dev only) | three hardware security keys (e.g. YubiKeys) from M6 | Each steward's signing key on its own device |
+| Real board | not needed for v0.1 | an seL4-supported dev board after v0.1 | Choose from the seL4 supported-platforms list for the architecture picked in §12 |
+
+Explicitly **not** needed for v0.1: GPUs, data-centre space, shielding, dedicated facilities, or network infrastructure beyond what CI already uses.
+
 ---
 
 ## 4. Repository layout
