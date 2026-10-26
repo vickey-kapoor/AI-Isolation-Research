@@ -19,6 +19,15 @@ import os
 FRAME_SIZE = 256
 
 
+def write_at(fd: int, data: bytes, offset: int) -> None:
+    """os.pwrite where it exists; seek-then-write on Windows, which lacks it."""
+    if hasattr(os, "pwrite"):
+        os.pwrite(fd, data, offset)
+    else:
+        os.lseek(fd, offset, os.SEEK_SET)
+        os.write(fd, data)
+
+
 def frame(form_id: int, payload: bytes) -> bytes:
     body = b"HAB0" + bytes([1, form_id]) + len(payload).to_bytes(2, "big") + payload
     return body + bytes(FRAME_SIZE - len(body))
@@ -132,7 +141,7 @@ def main():
 
     with open(args.tasks) as f:
         frames = answers(json.load(f))
-    fd = os.open(args.outbox, os.O_WRONLY)
+    fd = os.open(args.outbox, os.O_WRONLY | getattr(os, "O_BINARY", 0))
     # Seek to the end to get the size: this works for a plain file (gVisor)
     # and for a block device such as a VM's second disk (Firecracker).
     slots = os.lseek(fd, 0, os.SEEK_END) // FRAME_SIZE
@@ -140,7 +149,7 @@ def main():
     try:
         while args.rounds == 0 or done < args.rounds:
             for fr in frames:
-                os.pwrite(fd, fr, slot * FRAME_SIZE)
+                write_at(fd, fr, slot * FRAME_SIZE)
                 slot = (slot + 1) % slots
             os.fsync(fd)
             done += 1
