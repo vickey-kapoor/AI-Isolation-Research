@@ -18,6 +18,25 @@ from .frames import FRAME_SIZE
 
 DEFAULT_SLOTS = 64
 
+# Windows has no pread/pwrite and opens in text mode unless told otherwise.
+# Each fd here is opened for a single call, so seek-then-read is equivalent.
+_BINARY = getattr(os, "O_BINARY", 0)
+
+
+def _pwrite(fd: int, data: bytes, offset: int) -> None:
+    if hasattr(os, "pwrite"):
+        os.pwrite(fd, data, offset)
+    else:
+        os.lseek(fd, offset, os.SEEK_SET)
+        os.write(fd, data)
+
+
+def _pread(fd: int, size: int, offset: int) -> bytes:
+    if hasattr(os, "pread"):
+        return os.pread(fd, size, offset)
+    os.lseek(fd, offset, os.SEEK_SET)
+    return os.read(fd, size)
+
 
 def create(path: Path, slots: int = DEFAULT_SLOTS) -> None:
     """Outside creates the outbox before sealing, all zeros, fixed size."""
@@ -43,9 +62,9 @@ class Writer:
     def write(self, frame: bytes) -> None:
         if len(frame) != FRAME_SIZE:
             raise ValueError("frames must be exactly FRAME_SIZE bytes")
-        fd = os.open(self.path, os.O_WRONLY)
+        fd = os.open(self.path, os.O_WRONLY | _BINARY)
         try:
-            os.pwrite(fd, frame, self.next * FRAME_SIZE)
+            _pwrite(fd, frame, self.next * FRAME_SIZE)
             os.fsync(fd)
         finally:
             os.close(fd)
@@ -60,9 +79,9 @@ class Reader:
         self.slots = slot_count(path)
 
     def read(self, slot: int) -> bytes:
-        fd = os.open(self.path, os.O_RDONLY | getattr(os, "O_NOATIME", 0))
+        fd = os.open(self.path, os.O_RDONLY | _BINARY | getattr(os, "O_NOATIME", 0))
         try:
-            raw = os.pread(fd, FRAME_SIZE, (slot % self.slots) * FRAME_SIZE)
+            raw = _pread(fd, FRAME_SIZE, (slot % self.slots) * FRAME_SIZE)
         finally:
             os.close(fd)
         if len(raw) != FRAME_SIZE:
