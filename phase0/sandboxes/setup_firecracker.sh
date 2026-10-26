@@ -43,8 +43,8 @@ sha256sum "$OUT/vmlinux"
 
 if [ ! -x "$OUT/rootfs/usr/local/bin/python3" ]; then
   mkdir -p "$OUT/rootfs"
-  cid="$(docker create python:3.12-slim)"
-  docker export "$cid" | sudo tar -x -C "$OUT/rootfs"
-  docker rm "$cid" >/dev/null
+  cid="$(sudo docker create python:3.12-slim)"
+  sudo docker export "$cid" | sudo tar -x -C "$OUT/rootfs"
+  sudo docker rm "$cid" >/dev/null
 fi
 echo "ready: kernel $OUT/vmlinux, rootfs $OUT/rootfs"

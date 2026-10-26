@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars and fill in.
+project_id = "your-project-id"
+# zone     = "us-central1-b"
+# spot     = false

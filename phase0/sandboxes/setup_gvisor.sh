@@ -34,8 +34,8 @@ runsc --version | head -1
 
 if [ ! -x "$ROOTFS/usr/local/bin/python3" ]; then
   mkdir -p "$ROOTFS"
-  cid="$(docker create python:3.12-slim)"
-  docker export "$cid" | sudo tar -x -C "$ROOTFS"
-  docker rm "$cid" >/dev/null
+  cid="$(sudo docker create python:3.12-slim)"
+  sudo docker export "$cid" | sudo tar -x -C "$ROOTFS"
+  sudo docker rm "$cid" >/dev/null
 fi
 echo "rootfs ready at $ROOTFS"

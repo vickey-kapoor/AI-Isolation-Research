@@ -15,6 +15,8 @@ This guide takes you from nothing to running everything in `phase0/` yourself on
 
 ---
 
+**Prefer Terraform?** [infra/gcp/](infra/gcp/README.md) creates the same VM as steps 1 to 3 as code. Then continue from step 4 here.
+
 ## 1. Open Cloud Shell
 
 Go to [console.cloud.google.com](https://console.cloud.google.com), pick (or create) a project with billing turned on, and click the **Activate Cloud Shell** button (the `>_` icon, top right). A terminal opens in your browser. You don't need anything installed on your laptop.
@@ -65,7 +67,6 @@ You should see a line starting with `crw`. If it says "No such file", nested vir
 ```sh
 sudo apt-get update
 sudo apt-get install -y git docker.io python3-venv e2fsprogs
-sudo usermod -aG docker "$USER" && newgrp docker
 
 git clone https://github.com/vickey-kapoor/ai-isolation-research.git
 cd ai-isolation-research/phase0

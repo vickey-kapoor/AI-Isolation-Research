@@ -69,3 +69,15 @@ jobs:
           name: firecracker-report
           path: ${{ runner.temp }}/work/report.json
           if-no-files-found: ignore
+
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase0/infra/gcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -diff
+      - run: terraform init -backend=false
+      - run: terraform validate
