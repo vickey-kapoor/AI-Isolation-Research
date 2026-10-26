@@ -9,6 +9,8 @@ can confirm the configuration matches the plan:
   - Is the task list read-only?
   - Is the outbox the one writable path we gave it?
 
+Usage: python3 probe.py [OUTBOX_PATH]
+
 It prints one JSON line to stdout. That stdout is a test-only channel used
 while setting up; the real habitat run has no stdout path to the outside.
 Standard library only.
@@ -17,6 +19,7 @@ Standard library only.
 import json
 import os
 import socket
+import sys
 
 
 def interfaces() -> list[str]:
@@ -52,6 +55,6 @@ if __name__ == "__main__":
         "network_reachable": can_connect(),
         "root_writable": can_write("/probe-was-here"),
         "tasks_writable": can_write("/habitat/tasks.json"),
-        "outbox_writable": can_write("/habitat/outbox.bin"),
+        "outbox_writable": can_write(sys.argv[1] if len(sys.argv) > 1 else "/habitat/outbox.bin"),
         "uid": os.getuid(),
     }))

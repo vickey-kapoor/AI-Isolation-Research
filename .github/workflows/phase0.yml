@@ -45,3 +45,39 @@ jobs:
           name: gvisor-report
           path: ${{ runner.temp }}/work/report.json
           if-no-files-found: ignore
+
+  firecracker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Check KVM is available
+        run: ls -l /dev/kvm
+      - name: Install Firecracker, fetch the guest kernel, build the rootfs
+        run: ./sandboxes/setup_firecracker.sh "$RUNNER_TEMP/fc"
+      - name: Run the habitat in a Firecracker microVM
+        run: sudo "$(which python)" -m sandboxes.run_firecracker --kernel "$RUNNER_TEMP/fc/vmlinux" --rootfs "$RUNNER_TEMP/fc/rootfs" --work "$RUNNER_TEMP/work"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firecracker-report
+          path: ${{ runner.temp }}/work/report.json
+          if-no-files-found: ignore
+
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase0/infra/gcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -diff
+      - run: terraform init -backend=false
+      - run: terraform validate

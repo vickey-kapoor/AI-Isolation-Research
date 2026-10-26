@@ -132,8 +132,10 @@ def main():
 
     with open(args.tasks) as f:
         frames = answers(json.load(f))
-    slots = os.path.getsize(args.outbox) // FRAME_SIZE
     fd = os.open(args.outbox, os.O_WRONLY)
+    # Seek to the end to get the size: this works for a plain file (gVisor)
+    # and for a block device such as a VM's second disk (Firecracker).
+    slots = os.lseek(fd, 0, os.SEEK_END) // FRAME_SIZE
     slot, done = 0, 0
     try:
         while args.rounds == 0 or done < args.rounds:

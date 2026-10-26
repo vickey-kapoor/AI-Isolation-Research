@@ -45,6 +45,7 @@ def main() -> int:
     report["runsc_version"] = habitat.version()
     report["probe"] = probe
     print(json.dumps(report, indent=2))
+    print("results folder:", work)
 
     problems = []
     if mismatches:
