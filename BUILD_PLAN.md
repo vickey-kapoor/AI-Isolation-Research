@@ -4,7 +4,7 @@
 **Date:** 2026-10-26
 **Owner and builder:** Vickey
 **Companion to:** [PRD.md](PRD.md) v0.2
-**Status:** Engineering plan for a software prototype. Nothing here is a claim that the prototype contains anything.
+**Status:** Engineering plan for a software prototype (v0.1, CPU-only, pure seL4 in QEMU), with a roadmap to real hardware (v0.2) and a native accelerator (v0.3) in §14. Nothing here is a claim that the prototype contains anything.
 
 ---
 
@@ -129,6 +129,29 @@ v0.1 needs no special hardware and no GPU. QEMU emulates the ARM board in softwa
 Explicitly **not** needed for v0.1: GPUs, data-centre space, shielding, dedicated facilities, or network infrastructure beyond what CI already uses.
 
 ---
+
+### 3.2 Hard rule: no Linux kernel in the habitat
+
+**Rule (2026-10-26, Vickey):** no Linux kernel runs anywhere inside the habitat boundary, in any phase. Everything inside runs directly on seL4: the agent, the gate, the warden, every driver and, from v0.3, the accelerator driver. No Linux guest VM, no Linux driver VM, no Linux "helper" compartment.
+
+What this means in practice:
+
+- **Every driver inside is native.** If seL4 or the sDDF has no driver for a device, we write one as an unprivileged seL4 compartment. We do not borrow a Linux driver by running Linux in a VM.
+- **The trusted computing base stays small.** Inside the habitat it is the seL4 kernel, Microkit, our own compartments, and the boot firmware the board needs (bootloader, and on ARM the secure-monitor firmware). Every one of these is named in the assurance notes.
+- **What the rule does not cover in v0.1.** The *outside* tooling (build machine, verifier, governance, ledger) and the host that runs QEMU are ordinary Linux machines. They stand in for the outside world and the laws of physics, not for the habitat. Moving the verifier onto its own seL4 system is a later option (§14.4).
+
+#### Why not gVisor, Kata Containers or Firecracker?
+
+These are the usual answers to "how do I isolate untrusted code", and they are good tools for multi-tenant clouds. They don't meet this bar because each one ultimately rests on a large, unverified Linux kernel.
+
+| Option | How it isolates | What it rests on | Why it doesn't fit |
+|---|---|---|---|
+| **gVisor** | A user-space kernel (written in Go) intercepts the sandboxed program's system calls | The host Linux kernel, which still runs gVisor itself | Shrinks the exposed surface but keeps an unverified kernel as the last line |
+| **Kata Containers** | Runs each container inside a lightweight VM | KVM in the host Linux kernel, plus a Linux kernel inside each guest VM | Two Linux kernels in the trust chain, neither verified |
+| **Firecracker** | A minimal virtual-machine monitor with a tiny device model | KVM in the host Linux kernel; guests are normally Linux | Very small monitor, but the hypervisor is still Linux KVM |
+| **seL4 (this plan)** | A capability microkernel; every compartment gets only what the system description grants | About 10,000 lines of kernel code with machine-checked proofs (with stated assumptions) | Small enough to verify, and verified for its supported configurations. The rest of our stack is small enough to review line by line |
+
+The point isn't that the others are badly built. It's that the PRD asks for layers that hold "without our understanding why an attack fails" (principle 6), and a kernel with tens of millions of lines and a steady stream of security fixes can't be that layer.
 
 ## 4. Repository layout
 
@@ -679,6 +702,7 @@ These choices change what the prototype is. Defaults in **bold** are what this p
 3. **Artefact forms for v0.1:** **factorisation and sudoku** (unique answers, trivially checkable), or add a form closer to real benefit, such as a machine-checked proof in a small proof checker, accepting that its residual freedom is harder to bound?
 4. **Second verifier:** **stretch goal at M4**, or required for v0.1?
 5. **Where the repo lives:** **`prototype/` in this repository**, or a separate repository with this one keeping the PRD and plans?
+6. **Board for v0.2:** **an AMD/Xilinx Zynq UltraScale+ board that seL4 and Microkit support**, chosen so that v0.3's accelerator can live in the same chip's FPGA fabric (§14.2), or a cheaper board without FPGA fabric, accepting that v0.3 then needs new hardware.
 
 ---
 
@@ -704,3 +728,86 @@ These choices change what the prototype is. Defaults in **bold** are what this p
 | R-L9, R-A1, R-A2 | `assurance/` notes | M9 | review |
 | G3, layer 4 | `governance`, ledger | M5, M6 | ledger and governance tests |
 | G6 | §11 of this plan and the assurance notes | M9 | review |
+
+---
+
+## 14. Roadmap after v0.1
+
+The sensible order is to get the architecture right in simulation first, then on real hardware, then add an accelerator. Each phase keeps the no-Linux rule (§3.2) and everything the previous phase proved.
+
+| Phase | What it adds | Where it runs | Rough effort |
+|---|---|---|---|
+| **v0.1** (this plan, §10) | The whole architecture, CPU only | QEMU in a Codespace | 14–20 weeks part time |
+| **v0.2** | The same habitat on a real seL4-supported board | A bare-metal dev board | 6–10 weeks |
+| **v0.3** | A native seL4 driver for an accelerator on open hardware, with DMA confined by the IOMMU | The same board, using its FPGA fabric | 12–20 weeks, research-grade |
+
+### 14.1 v0.2: real hardware
+
+**Goal.** Boot the sealed v0.1 habitat on a physical board with no emulator, and pass the same system and end-to-end tests over a real serial line.
+
+**Hardware.**
+- **Board:** an AMD/Xilinx Zynq UltraScale+ MPSoC development board on the seL4 and Microkit supported-platform lists. The ZCU102 is the reference choice. Check the current lists for cheaper supported boards in the same family before buying. This family is recommended because it has ARM Cortex-A53 cores (the same architecture as v0.1), an IOMMU (ARM SMMU), hardware memory-protection units, and FPGA fabric on the same chip, which v0.3 needs.
+- **Lab bits:** a microSD card, a USB-serial or USB-JTAG cable (often built into the board), and a small, cheap "lab controller" computer, such as a Raspberry Pi, to capture serial output and switch the board's power for automated tests.
+- **Where it lives:** physically with Vickey. Building still happens in the Codespace; a weak laptop is fine for copying images to the SD card and watching the serial output.
+
+**Milestones.**
+- **H0. Pre-port in emulation.** Retarget the build to the board's memory map and devices, using QEMU's Zynq UltraScale+ machine model to shake out problems before the board arrives.
+- **H1. Bring-up.** Boot Microkit "hello world" on the real board from the SD card. Record the boot chain (first-stage bootloader, secure-monitor firmware, bootloader) and pin and hash each piece.
+- **H2. Habitat on hardware.** Boot the four-compartment habitat; swap the QEMU UART and timer for the board's devices (sDDF drivers where they exist, small native ones where they don't).
+- **H3. One-way serial in hardware.** Leave the board's serial *receive* line physically disconnected at the cable, and keep the gate transmit-only in software as well.
+- **H4. Tests on hardware.** Run §9.1 system tests and the e2e demo with the lab controller standing in for the host, and add hardware-only tests (cold boot, power cut mid-run, termination by power removal).
+- **H5. Assurance update.** Rewrite the layer 2 and 3 notes for real hardware, including the boot firmware now in the trusted base and what the seL4 proofs assume about this specific SoC.
+
+**Main risks.** Board-specific bring-up time; boot firmware that is large and unverified; driver gaps for the board's UART or timer.
+
+### 14.2 v0.3: native accelerator on open hardware
+
+**Goal.** Give the agent a hardware accelerator for heavy compute, consistent with "provide, don't deprive", without adding Linux or any closed driver, and with the accelerator's memory access confined by hardware.
+
+**Why not a GPU.** No native seL4 driver exists for modern NVIDIA or AMD GPUs. Their drivers run to millions of lines, and NVIDIA's are closed, so they can't be reviewed or verified. A driver we can understand needs hardware we can understand.
+
+**Recommended path: an open accelerator design in the board's FPGA fabric.**
+- Use an open-source accelerator design, such as Apache TVM's VTA, NVIDIA's open NVDLA hardware design (small configuration), or a simple purpose-built matrix-multiply engine. Every line of the hardware design is then readable.
+- The accelerator bitstream is built before sealing, hashed into the seal manifest, and loaded by the boot chain. After sealing, nothing inside the habitat can reconfigure the fabric: no compartment is given the FPGA configuration interface.
+
+**Alternative, later:** a Tenstorrent PCIe card (open-source drivers and software stack) on an x86-64 seL4 system, with DMA confined by Intel VT-d. It is far more capable, but it means porting a driver written for Linux, plus PCIe support and on-card firmware in the trusted base. Treat it as a separate research project after v0.3.
+
+**Design.**
+- **`accel_drv` compartment.** A new, unprivileged seL4 compartment that is the only one mapping the accelerator's registers. A bug in it can crash it, not the kernel. It sits *inside* the habitat boundary as part of the inner world.
+- **Agent ↔ driver.** The agent gets exactly one new channel, to `accel_drv`, plus a shared command region and a shared data region. `sysdesc-lint` is updated: that is the only channel the agent may hold, and `accel_drv` holds no other channels, no UART and no link to the gate.
+- **DMA confinement.** The accelerator can only read and write a dedicated DMA memory region. This is enforced in hardware by the SoC's IOMMU (SMMU) and, as a second layer, by its memory-protection units. Both are configured at boot from values in the sealed manifest and never changed afterwards.
+- **No new outward path.** The accelerator has no connection to the UART, the gate or anything outside. The airlock is unchanged: the only way out is still the gate.
+
+**Milestones.**
+- **A0. Accelerator in fabric.** Build and simulate the open accelerator design; generate a bitstream; hash it into the manifest.
+- **A1. Boot-time loading.** The boot chain loads the bitstream; confirm no compartment can reach the configuration interface (lint + hardware test).
+- **A2. Driver compartment.** Write `accel_drv` in Rust: initialise the accelerator, submit jobs, collect results, and halt it on any error (fail closed, like the warden).
+- **A3. DMA confinement.** Configure the SMMU and memory-protection units at boot. Conformance tests confirm the configuration: a job that names a buffer outside the DMA region is blocked by the hardware and halts the accelerator.
+- **A4. Agent uses it.** The toy agent offloads matrix work (for example a small neural network or a linear-algebra step in a solver); every result is cross-checked against the CPU in tests.
+- **A5. Assurance note.** A dedicated note for the accelerator: guarantees, assumptions (correct SMMU and fabric behaviour, correct bitstream toolchain), and exclusions.
+
+**Main risks.**
+
+| Risk | Why it matters | Mitigation |
+|---|---|---|
+| IOMMU (SMMU) support in seL4 and Microkit for this SoC may be partial | DMA confinement is the accelerator's core guarantee | Check kernel and Microkit support at the start of v0.3; fall back to configuring the SMMU from boot firmware plus the memory-protection units as a second layer |
+| FPGA vendor toolchain is closed and large | It is in the trust chain for the bitstream | Pin and hash it; prefer open toolchains where the device allows; keep the design small enough to review |
+| Accelerator performance is modest | Open FPGA designs are far slower than GPUs | Acceptable for a prototype: v0.3 proves the *architecture* for accelerators, not raw speed |
+| Driver complexity creeps up | A big driver undoes the point of seL4 | Hard budget on `accel_drv` size; anything that doesn't fit stays out |
+
+### 14.3 Hardware shopping list across phases
+
+| Item | Needed from | Rough cost |
+|---|---|---|
+| Codespace (4-core, 16 GB) | v0.1 | free tier, then pay per hour |
+| Three hardware security keys | v0.1, M6 | about $50 each |
+| Zynq UltraScale+ dev board on the seL4 supported list | v0.2 | a few hundred to a few thousand dollars, depending on the board; check before buying |
+| microSD, cables, a lab-controller computer (e.g. a Raspberry Pi) | v0.2 | about $100–150 |
+| Nothing new for the FPGA path | v0.3 | uses the v0.2 board's fabric |
+| Tenstorrent card + an x86-64 machine seL4 supports | after v0.3, optional | roughly $1,000–1,500 for the card, plus the machine |
+
+### 14.4 Further out
+
+- Move the outside verifier onto its own seL4 system, so no Linux sits on the airlock path at all.
+- Put each steward's approval tool on separate hardware.
+- Revisit RISC-V once v0.2 shows how much board-specific work a port costs.
