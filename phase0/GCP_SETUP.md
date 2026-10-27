@@ -11,7 +11,7 @@ This guide takes you from nothing to running everything in `phase0/` yourself on
 | Part | Status |
 |---|---|
 | Tests, demo, gVisor | Have run on Claude's machine and in GitHub's checks |
-| Firecracker | Has run in GitHub's checks (PR #5, Firecracker v1.15.0). Not yet run on Google Cloud, so your run will be the first there |
+| Firecracker | Has run in GitHub's checks (PR #5, Firecracker v1.15.0) and once on a Google Cloud VM made with `infra/gcp/` (2026-10-26) |
 | Stacked (gVisor inside Firecracker) | Has run in GitHub's checks (PR #8). Not yet run on Google Cloud |
 
 ---
