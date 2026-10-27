@@ -12,6 +12,7 @@ This guide takes you from nothing to running everything in `phase0/` yourself on
 |---|---|
 | Tests, demo, gVisor | Have run on Claude's machine and in GitHub's checks |
 | Firecracker | Has run in GitHub's checks (PR #5, Firecracker v1.15.0). Not yet run on Google Cloud, so your run will be the first there |
+| Stacked (gVisor inside Firecracker) | Has run in GitHub's checks (PR #8). Not yet run on Google Cloud |
 
 ---
 
@@ -70,7 +71,6 @@ sudo apt-get install -y git docker.io python3-venv e2fsprogs
 
 git clone https://github.com/vickey-kapoor/ai-isolation-research.git
 cd ai-isolation-research/phase0
-git checkout claude/project-thread-7hjr09   # the branch with Firecracker (PR #5); use main once it's merged
 
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
@@ -101,6 +101,12 @@ sudo .venv/bin/python -m sandboxes.run_gvisor --rootfs ~/habitat-rootfs
 ```sh
 ./sandboxes/setup_firecracker.sh ~/habitat-fc
 sudo .venv/bin/python -m sandboxes.run_firecracker --kernel ~/habitat-fc/vmlinux --rootfs ~/habitat-fc/rootfs
+```
+
+**Stacked (gVisor inside Firecracker):** needs both setups above, then:
+
+```sh
+sudo .venv/bin/python -m sandboxes.run_stacked --kernel ~/habitat-fc/vmlinux --rootfs ~/habitat-fc/rootfs
 ```
 
 Each run prints:

@@ -12,7 +12,7 @@ We use these words in one sense only, to avoid misreading.
 |---|---|---|
 | **ASI**, **the resident** | The hypothetical superintelligence the PRD is about | Anything in this folder. Nothing in Phase 0 is an ASI or any kind of AI |
 | **Puzzle program** | `puzzle_program/puzzle_program.py`, an ordinary Python program of about 125 lines that factors numbers and solves sudokus. It stands in for the resident so we can test the walls and the airlock | An AI, a model, or anything that learns, plans or has goals |
-| **Sandbox** | Software that confines a program: gVisor, and later Firecracker | A proven boundary. Every sandbox here relies on the host Linux kernel |
+| **Sandbox** | Software that confines a program: gVisor and Firecracker, alone or stacked | A proven boundary. Every sandbox here relies on the host Linux kernel |
 | **Habitat** (in code) | One sandbox running the puzzle program, plus its outbox | The PRD's sealed habitat, which is far stronger |
 | **Outbox** | A file of fixed-size slots the puzzle program writes and the outside only reads | A two-way channel |
 | **Frame** | One 256-byte slot's contents | |
@@ -42,5 +42,6 @@ python3 -m unittest discover -s tests -t . -v   # 31 tests
 python3 -m airlock.demo                          # the whole path, end to end
 ```
 
-The demo has no sandbox yet: the puzzle program runs as an ordinary process. P0.2
-puts it inside gVisor, P0.3 inside Firecracker.
+The demo has no sandbox: the puzzle program runs as an ordinary process. P0.2
+puts it inside gVisor, P0.3 inside Firecracker, and P0.4 inside gVisor inside
+Firecracker. How to run those is in [GCP_SETUP.md](GCP_SETUP.md).
