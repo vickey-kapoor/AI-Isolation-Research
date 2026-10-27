@@ -18,9 +18,10 @@ from pathlib import Path
 from . import frames
 from .agenda import Agenda
 from .budget import Budget
-from .forms import Rejected, TaskList, verify
+from .forms import TaskList
 from .ledger import Ledger
 from .outbox import Reader
+from .verifier import check
 
 
 class Quarantine:
@@ -51,13 +52,17 @@ class Quarantine:
 
 class Gate:
     def __init__(self, reader: Reader, tasks: TaskList, budget: Budget,
-                 quarantine: Quarantine, ledger: Ledger, agenda: Agenda | None = None):
+                 quarantine: Quarantine, ledger: Ledger, agenda: Agenda | None = None,
+                 verifier=None):
         self.reader = reader
         self.tasks = tasks
         self.budget = budget
         self.quarantine = quarantine
         self.ledger = ledger
         self.agenda = agenda
+        # Anything that maps a raw frame to (form, task) or None. By default the
+        # check runs in this process; sandboxes/verifier_box.py runs it in its own sandbox.
+        self.verifier = verifier or (lambda raw: check(raw, tasks))
         self.pending: dict[tuple[int, int], bytes] = {}  # verified, waiting for their due tick
         self.tick_count = 0
         self.seen: set[tuple[int, int]] = set()
@@ -81,13 +86,11 @@ class Gate:
         if frames.is_empty(raw):
             self.stats["empty"] += 1
             return None
-        try:
-            frame = frames.decode(raw)
-            task_id = verify(frame.form_id, frame.payload, self.tasks)
-        except (frames.FrameError, Rejected):
+        key = self.verifier(raw)
+        if key is None:
             self.stats["rejected"] += 1
             return None
-        return (frame.form_id, task_id), raw
+        return key, raw
 
     def _first_come(self, tick: int) -> str | None:
         checked = self._check(tick)

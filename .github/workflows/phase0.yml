@@ -36,6 +36,8 @@ jobs:
         run: ./sandboxes/setup_gvisor.sh "$RUNNER_TEMP/rootfs"
       - name: Run the habitat under gVisor
         run: sudo "$(which python)" -m sandboxes.run_gvisor --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/work"
+      - name: Run the verifier in its own gVisor sandbox (Q2)
+        run: sudo "$(which python)" -m sandboxes.run_verifier_box --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/verifier"
       - name: Show runsc logs on failure
         if: failure()
         run: sudo GVISOR_DEBUG=1 "$(which python)" -m sandboxes.run_gvisor --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/work-debug" || sudo find "$RUNNER_TEMP/work-debug/runsc-logs" -type f -exec tail -n 40 {} +

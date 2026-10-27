@@ -98,3 +98,34 @@ class AgendaTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerifierProgramTests(unittest.TestCase):
+    """Q2: the verifier as a separate program gives the same verdicts as the in-process check."""
+
+    def test_separate_process_matches_in_process(self):
+        import subprocess
+        import sys
+        from airlock.verifier import check, decode_verdict
+        batch = ANSWERS + [bytes(frames.FRAME_SIZE), ANSWERS[0][:-1] + b"\x01"]
+        out = subprocess.run([sys.executable, "-m", "airlock.verifier", str(TASKS_PATH)], cwd=ROOT,
+                             input=b"".join(batch), capture_output=True, check=True).stdout
+        self.assertEqual(len(out), 4 * len(batch))
+        verdicts = [decode_verdict(out[i:i + 4]) for i in range(0, len(out), 4)]
+        self.assertEqual(verdicts, [check(f, TASKS) for f in batch])
+        self.assertEqual(verdicts[-2:], [None, None])
+
+    def test_gate_uses_the_verifier_it_is_given(self):
+        # A verifier that refuses everything: nothing reaches quarantine.
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            box = d / "outbox.bin"
+            outbox.create(box, 16)
+            outbox.Writer(box).write(ANSWERS[0])
+            q = Quarantine(d / "q")
+            gate = Gate(outbox.Reader(box), TASKS, Budget(4, 16), q, Ledger(d / "l.jsonl"),
+                        verifier=lambda raw: None)
+            for _ in range(16):
+                gate.tick()
+            self.assertEqual(q.held_ids(), [])
+            self.assertEqual(gate.stats["rejected"], 1)
