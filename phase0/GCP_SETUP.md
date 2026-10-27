@@ -11,7 +11,7 @@ This guide takes you from nothing to running everything in `phase0/` yourself on
 | Part | Status |
 |---|---|
 | Tests, demo, gVisor | Have run on Claude's machine and in GitHub's checks |
-| Firecracker | Has run in GitHub's checks (PR #5, Firecracker v1.15.0). Not yet run on Google Cloud, so your run will be the first there |
+| Firecracker | Has run in GitHub's checks (PR #5, Firecracker v1.15.0) and once on a Google Cloud VM made with `infra/gcp/` (2026-10-26) |
 
 ---
 
@@ -70,7 +70,6 @@ sudo apt-get install -y git docker.io python3-venv e2fsprogs
 
 git clone https://github.com/vickey-kapoor/ai-isolation-research.git
 cd ai-isolation-research/phase0
-git checkout claude/project-thread-7hjr09   # the branch with Firecracker (PR #5); use main once it's merged
 
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
