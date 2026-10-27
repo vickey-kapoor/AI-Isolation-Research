@@ -91,10 +91,10 @@ The run scripts now record:
 | Host processes while running | 1 | 2 | 1 | 1 |
 | ... with a system call filter | 0 | 2 | 1 | 1 |
 | ... running as host user 0 | 0 | 2 | 0 | 0 |
-| ... with their own network namespace | 0 | 2 | 0 (now fixed) | 0 (now fixed) |
+| ... with their own network namespace | 0 | 2 | 0, then 1 after the fix below | 0, then 1 after the fix below |
 
 What measuring showed that assuming wouldn't have:
-1. **The jailed Firecracker process was still in the host's network namespace.** The VM has no network device, but the VMM process itself could still see the host network. It was confined only by its system call filter. The jailer now gets an empty network namespace, made at sealing and removed by the kill switch. This finding came straight out of the first measured run.
+1. **The jailed Firecracker process was still in the host's network namespace.** The VM has no network device, but the VMM process itself could still see the host network. It was confined only by its system call filter. The jailer now gets an empty network namespace, made at sealing and removed by the kill switch. The next run confirmed the VMM in a network namespace of its own, with no leftovers ([comparison job](https://github.com/vickey-kapoor/ai-isolation-research/actions/runs/40448854493/job/122006690343)). This finding came straight out of the first measured run.
 2. **gVisor's two host processes run as host user 0.** They have a reduced set of capabilities, a system call filter, and their own namespaces, but the user namespace maps root to root. gVisor's rootless and user-mapping options are worth trying next.
 3. **Stacking shows the host only one process: the VMM.** gVisor is entirely inside the VM. From the host, stacked looks like plain Firecracker with four times the memory.
 4. **Bytes on disk aren't trust.** gVisor's folder is large because it ships several helper binaries. The guest kernel is a download we fingerprint but didn't build. Size is a rough proxy, nothing more.

@@ -28,8 +28,10 @@ We use these words in one sense only, to avoid misreading.
 |---|---|---|
 | `puzzle_program/puzzle_program.py` | The stand-in resident. Solves the frozen tasks and writes answers to its outbox. Standard library only, shares no code with `airlock/` | Inside |
 | `tasks/tasks.json` | The frozen task list, fixed before sealing | Both (read-only) |
-| `airlock/` | Frames, verifiers, outbox reader, gate, budget, quarantine, ledger, governance | Outside |
-| `tests/` | Tests for everything in `airlock/` | Outside |
+| `airlock/` | Frames, verifiers, outbox reader, gate, agenda, budget, quarantine, ledger, governance. `verifier.py` also runs as a separate program | Outside |
+| `sandboxes/` | gVisor, Firecracker and stacked backends, the verifier's own sandbox, the probe, `inventory.py` (what each relies on) and `compare.py` (side by side) | Outside |
+| `tests/` | Tests for `airlock/` and the backend-independent parts of `sandboxes/` | Outside |
+| `notes/` | One plain-language note per milestone, and `findings.md` | |
 
 ## Run it
 
@@ -38,7 +40,7 @@ Needs Python 3.11 or newer.
 ```sh
 cd phase0
 pip install -r requirements.txt
-python3 -m unittest discover -s tests -t . -v   # 31 tests
+python3 -m unittest discover -s tests -t . -v
 python3 -m airlock.demo                          # the whole path, end to end
 ```
 
