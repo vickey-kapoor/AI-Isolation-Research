@@ -119,6 +119,9 @@ class StackedHabitat(FirecrackerHabitat):
         link.symlink_to("/usr/local/lib/gvisor/runsc")
         (staging / "mnt/outbox").mkdir(parents=True, exist_ok=True)
         hab = staging / "habitat"
+        # gVisor mounts the outbox file over this spot. The VM's root disk is
+        # read-only, so the spot has to exist before sealing.
+        (hab / "outbox.bin").touch()
         for name, args in INNER_ARGS.items():
             bundle = hab / "bundles" / name
             bundle.mkdir(parents=True, exist_ok=True)
