@@ -58,7 +58,9 @@ def build_outbox_disk(slots: int, out: Path) -> int:
     staging = out.with_suffix(".d")
     shutil.rmtree(staging, ignore_errors=True)
     staging.mkdir(parents=True)
-    (staging / "outbox.bin").write_bytes(bytes(size))
+    # Filled with 0xFF, not zeros: newer mkfs.ext2 stores an all-zero file as
+    # a hole with no blocks at all. The real zeros are written in below.
+    (staging / "outbox.bin").write_bytes(b"\xff" * size)
     (staging / "outbox.bin").chmod(0o666)  # gVisor runs the puzzle program as user 65534
     out.unlink(missing_ok=True)
     subprocess.run(["truncate", "-s", "4M", str(out)], check=True)
@@ -72,7 +74,11 @@ def build_outbox_disk(slots: int, out: Path) -> int:
         blocks.append(int(res.stdout.split()[-1]))
     if blocks != list(range(blocks[0], blocks[0] + len(blocks))) or blocks[0] == 0:
         raise RuntimeError(f"outbox.bin is not one contiguous run of blocks: {blocks}")
-    return blocks[0] * BLOCK
+    offset = blocks[0] * BLOCK
+    with open(out, "r+b") as f:  # every slot starts empty
+        f.seek(offset)
+        f.write(bytes(size))
+    return offset
 
 
 class StackedHabitat(FirecrackerHabitat):
