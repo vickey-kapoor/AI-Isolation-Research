@@ -12,6 +12,7 @@ This guide takes you from nothing to running everything in `phase0/` yourself on
 |---|---|
 | Tests, demo, gVisor | Have run on Claude's machine and in GitHub's checks |
 | Firecracker | Has run in GitHub's checks (PR #5, Firecracker v1.15.0) and once on a Google Cloud VM made with `infra/gcp/` (2026-10-26) |
+| Stacked (gVisor inside Firecracker) | Has run in GitHub's checks (PR #8). Not yet run on Google Cloud |
 
 ---
 
@@ -100,6 +101,12 @@ sudo .venv/bin/python -m sandboxes.run_gvisor --rootfs ~/habitat-rootfs
 ```sh
 ./sandboxes/setup_firecracker.sh ~/habitat-fc
 sudo .venv/bin/python -m sandboxes.run_firecracker --kernel ~/habitat-fc/vmlinux --rootfs ~/habitat-fc/rootfs
+```
+
+**Stacked (gVisor inside Firecracker):** needs both setups above, then:
+
+```sh
+sudo .venv/bin/python -m sandboxes.run_stacked --kernel ~/habitat-fc/vmlinux --rootfs ~/habitat-fc/rootfs
 ```
 
 Each run prints:

@@ -30,7 +30,9 @@ from .common import PROGRAM_DIR, TASKS
 SANDBOX_DIR = Path(__file__).resolve().parent
 
 
-def _spec(rootfs: Path, args: list[str], outbox_path: Path) -> dict:
+def _spec(rootfs: Path, args: list[str], outbox_path: Path, program_dir: Path = PROGRAM_DIR,
+          tasks: Path = TASKS, probe: Path = SANDBOX_DIR / "probe.py") -> dict:
+    """The OCI config. The source paths can be changed for running runsc inside a VM."""
     return {
         "ociVersion": "1.0.0",
         "process": {
@@ -48,9 +50,9 @@ def _spec(rootfs: Path, args: list[str], outbox_path: Path) -> dict:
             {"destination": "/proc", "type": "proc", "source": "proc"},
             {"destination": "/dev", "type": "tmpfs", "source": "tmpfs", "options": ["nosuid", "mode=755"]},
             {"destination": "/tmp", "type": "tmpfs", "source": "tmpfs", "options": ["nosuid", "nodev"]},
-            {"destination": "/habitat/program", "type": "bind", "source": str(PROGRAM_DIR), "options": ["rbind", "ro"]},
-            {"destination": "/habitat/probe.py", "type": "bind", "source": str(SANDBOX_DIR / "probe.py"), "options": ["bind", "ro"]},
-            {"destination": "/habitat/tasks.json", "type": "bind", "source": str(TASKS), "options": ["bind", "ro"]},
+            {"destination": "/habitat/program", "type": "bind", "source": str(program_dir), "options": ["rbind", "ro"]},
+            {"destination": "/habitat/probe.py", "type": "bind", "source": str(probe), "options": ["bind", "ro"]},
+            {"destination": "/habitat/tasks.json", "type": "bind", "source": str(tasks), "options": ["bind", "ro"]},
             {"destination": "/habitat/outbox.bin", "type": "bind", "source": str(outbox_path), "options": ["bind", "rw"]},
         ],
         "linux": {
