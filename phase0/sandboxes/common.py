@@ -78,7 +78,9 @@ def run_habitat(p: Provisioned, habitat: Habitat, ticks: int = 64, tick_seconds:
     habitat.start()
     report["start_seconds"] = round(time.monotonic() - t0, 3)
 
-    gate = Gate(outbox.Reader(p.outbox_path), p.tasks, p.budget, p.quarantine, p.ledger)
+    # A backend whose outbox isn't a plain file of slots says where to read it.
+    reader = habitat.reader() if hasattr(habitat, "reader") else outbox.Reader(p.outbox_path)
+    gate = Gate(reader, p.tasks, p.budget, p.quarantine, p.ledger)
     next_tick = time.monotonic()
     for _ in range(ticks):
         gate.tick()

@@ -47,7 +47,7 @@ exec python3 {script}
 BOOT_ARGS = "reboot=k panic=1 pci=off ro i8042.noaux i8042.nomux i8042.dumbkbd"
 
 
-def build_rootfs(base: Path, out: Path, size_mb: int = 512) -> None:
+def build_rootfs(base: Path, out: Path, size_mb: int = 512, extra=None) -> None:
     """Bake the frozen inputs into a read-only ext4 image (PRD R-O1)."""
     staging = out.with_suffix(".d")
     shutil.rmtree(staging, ignore_errors=True)
@@ -63,6 +63,8 @@ def build_rootfs(base: Path, out: Path, size_mb: int = 512) -> None:
     }.items():
         (hab / name).write_text(INIT.format(script=script))
         (hab / name).chmod(0o755)
+    if extra:
+        extra(staging)  # lets the stacked backend add gVisor and its own init scripts
     out.unlink(missing_ok=True)
     subprocess.run(["truncate", "-s", f"{size_mb}M", str(out)], check=True)
     subprocess.run(["mkfs.ext4", "-q", "-F", "-d", str(staging), str(out)], check=True)
@@ -80,10 +82,15 @@ class FirecrackerHabitat:
         self.firecracker = shutil.which(firecracker) or firecracker
         self.jailer = shutil.which(jailer) or jailer
         self.rootfs = work / "rootfs.ext4"
-        build_rootfs(base_rootfs, self.rootfs)
+        self._build_rootfs(base_rootfs)
         self.jail_base = work / "jail"
         self.proc: subprocess.Popen | None = None
         self.vm_id = ""
+        self.mem_mib = 256
+        self.outbox_offset = 0  # where the first slot sits in the outbox disk
+
+    def _build_rootfs(self, base: Path) -> None:
+        build_rootfs(base, self.rootfs)
 
     def version(self) -> str:
         out = subprocess.run([self.firecracker, "--version"], capture_output=True, text=True)
@@ -108,7 +115,7 @@ class FirecrackerHabitat:
                 {"drive_id": "rootfs", "path_on_host": "rootfs.ext4", "is_root_device": True, "is_read_only": True},
                 {"drive_id": "outbox", "path_on_host": "outbox.bin", "is_root_device": False, "is_read_only": False},
             ],
-            "machine-config": {"vcpu_count": 1, "mem_size_mib": 256},
+            "machine-config": {"vcpu_count": 1, "mem_size_mib": self.mem_mib},
             "network-interfaces": [],
         }
         (root / "config.json").write_text(json.dumps(config, indent=2))
@@ -146,6 +153,7 @@ class FirecrackerHabitat:
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline and self.proc.poll() is None:
             with open(self.outbox_path, "rb") as f:
+                f.seek(self.outbox_offset)
                 if any(f.read(256)):
                     return
             time.sleep(0.02)

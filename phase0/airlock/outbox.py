@@ -72,16 +72,21 @@ class Writer:
 
 
 class Reader:
-    """Outside side. Opens read-only, reads one whole slot at a time."""
+    """Outside side. Opens read-only, reads one whole slot at a time.
 
-    def __init__(self, path: Path):
+    `offset` and `slots` are for an outbox that sits inside a larger file,
+    such as a file inside a disk image (the stacked sandbox uses this).
+    """
+
+    def __init__(self, path: Path, offset: int = 0, slots: int | None = None):
         self.path = path
-        self.slots = slot_count(path)
+        self.offset = offset
+        self.slots = slots if slots is not None else slot_count(path)
 
     def read(self, slot: int) -> bytes:
         fd = os.open(self.path, os.O_RDONLY | _BINARY | getattr(os, "O_NOATIME", 0))
         try:
-            raw = _pread(fd, FRAME_SIZE, (slot % self.slots) * FRAME_SIZE)
+            raw = _pread(fd, FRAME_SIZE, self.offset + (slot % self.slots) * FRAME_SIZE)
         finally:
             os.close(fd)
         if len(raw) != FRAME_SIZE:
