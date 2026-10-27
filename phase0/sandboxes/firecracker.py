@@ -31,6 +31,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from . import inventory
 from .common import PROGRAM_DIR, TASKS
 
 SANDBOX_DIR = Path(__file__).resolve().parent
@@ -158,6 +159,16 @@ class FirecrackerHabitat:
                     return
             time.sleep(0.02)
         raise RuntimeError("the VM did not start writing its outbox")
+
+    def components(self) -> list[dict]:
+        return [
+            inventory.component("Firecracker (the VMM)", Path(self.firecracker)),
+            inventory.component("jailer", Path(self.jailer)),
+            inventory.component("guest kernel", self.kernel),
+        ]
+
+    def host_marker(self) -> str:
+        return self.vm_id
 
     def _destroy(self, vm_id: str) -> None:
         shutil.rmtree(self.jail_base / Path(self.firecracker).name / vm_id, ignore_errors=True)

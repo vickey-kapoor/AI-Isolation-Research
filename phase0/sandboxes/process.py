@@ -24,6 +24,12 @@ class ProcessHabitat:
             [sys.executable, str(PROGRAM_DIR / "puzzle_program.py"), str(TASKS), str(self.outbox_path), "--rounds", "0"],
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    def components(self) -> list[dict]:
+        return []  # no wall at all
+
+    def host_marker(self) -> str:
+        return str(self.outbox_path)
+
     def kill_and_destroy(self) -> None:
         if self.proc:
             self.proc.kill()

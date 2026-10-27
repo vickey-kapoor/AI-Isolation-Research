@@ -57,6 +57,7 @@ def main() -> int:
     report = run_habitat(p, habitat)
     report["firecracker_version"] = habitat.version()
     report["probe"] = probe
+    (work / "report.json").write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
     print("results folder:", work)
 

@@ -22,6 +22,8 @@ from airlock.gate import Gate, Quarantine
 from airlock.governance import Governance, Proposal, public_key_hex, sign
 from airlock.ledger import Ledger
 
+from . import inventory
+
 PHASE0 = Path(__file__).resolve().parent.parent
 TASKS = PHASE0 / "tasks" / "tasks.json"
 PROGRAM_DIR = PHASE0 / "puzzle_program"
@@ -34,6 +36,12 @@ class Habitat(Protocol):
     def kill_and_destroy(self) -> None: ...
     def leftovers(self) -> list[str]:
         """Anything of the habitat still present after destruction. Must be empty."""
+        ...
+    def components(self) -> list[dict]:
+        """The files the walls are built from (see inventory.py)."""
+        ...
+    def host_marker(self) -> str:
+        """A string in the command line of every host process the habitat runs."""
         ...
 
 
@@ -77,6 +85,8 @@ def run_habitat(p: Provisioned, habitat: Habitat, ticks: int = 64, tick_seconds:
     t0 = time.monotonic()
     habitat.start()
     report["start_seconds"] = round(time.monotonic() - t0, 3)
+    report["trusts"] = {"host_kernel": inventory.host_kernel(), "components": habitat.components()}
+    report["host_processes"] = inventory.host_processes(habitat.host_marker())
 
     # A backend whose outbox isn't a plain file of slots says where to read it.
     reader = habitat.reader() if hasattr(habitat, "reader") else outbox.Reader(p.outbox_path)
