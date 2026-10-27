@@ -16,6 +16,7 @@ from collections import Counter
 from pathlib import Path
 
 from . import frames
+from .agenda import Agenda
 from .budget import Budget
 from .forms import Rejected, TaskList, verify
 from .ledger import Ledger
@@ -50,12 +51,14 @@ class Quarantine:
 
 class Gate:
     def __init__(self, reader: Reader, tasks: TaskList, budget: Budget,
-                 quarantine: Quarantine, ledger: Ledger):
+                 quarantine: Quarantine, ledger: Ledger, agenda: Agenda | None = None):
         self.reader = reader
         self.tasks = tasks
         self.budget = budget
         self.quarantine = quarantine
         self.ledger = ledger
+        self.agenda = agenda
+        self.pending: dict[tuple[int, int], bytes] = {}  # verified, waiting for their due tick
         self.tick_count = 0
         self.seen: set[tuple[int, int]] = set()
         self.stats: Counter = Counter()
@@ -67,6 +70,13 @@ class Gate:
         if self.budget.closed:
             self.stats["closed"] += 1
             return None
+        if self.agenda is None:
+            return self._first_come(tick)
+        self._hold(tick)
+        return self._admit_due(tick)
+
+    def _check(self, tick: int):
+        """Read this tick's slot. Returns (key, raw) for a verified answer, else None."""
         raw = self.reader.read(tick % self.reader.slots)
         if frames.is_empty(raw):
             self.stats["empty"] += 1
@@ -77,15 +87,51 @@ class Gate:
         except (frames.FrameError, Rejected):
             self.stats["rejected"] += 1
             return None
-        key = (frame.form_id, task_id)
+        return (frame.form_id, task_id), raw
+
+    def _first_come(self, tick: int) -> str | None:
+        checked = self._check(tick)
+        if checked is None:
+            return None
+        key, raw = checked
         if key in self.seen:
             self.stats["duplicate"] += 1
             return None
         if not self.budget.try_spend(tick):
             self.stats["over_budget"] += 1
             return None
+        return self._quarantine(key, raw)
+
+    def _hold(self, tick: int) -> None:
+        checked = self._check(tick)
+        if checked is None:
+            return
+        key, raw = checked
+        if key in self.pending or key in self.seen or not self.agenda.is_open(key, tick):
+            self.stats["duplicate"] += 1
+            return
+        self.pending[key] = raw
+
+    def _admit_due(self, tick: int) -> str | None:
+        key = self.agenda.due_at(tick)
+        if key is None:
+            return None
+        raw = self.pending.pop(key, None)
+        if raw is None:
+            self.stats["missed"] += 1
+            if self.agenda.on_miss == "close":
+                self.budget.close()
+                self.ledger.append("closed", {"reason": "an agenda task was not answered in time"})
+            return None
+        self.seen.add(key)
+        if not self.budget.try_spend(tick):
+            self.stats["over_budget"] += 1
+            return None
+        return self._quarantine(key, raw)
+
+    def _quarantine(self, key: tuple[int, int], raw: bytes) -> str:
         self.seen.add(key)
         artefact_id = self.quarantine.add(raw)
-        self.ledger.append("quarantined", {"artefact": artefact_id, "form": frame.form_id, "task": task_id})
+        self.ledger.append("quarantined", {"artefact": artefact_id, "form": key[0], "task": key[1]})
         self.stats["quarantined"] += 1
         return artefact_id
