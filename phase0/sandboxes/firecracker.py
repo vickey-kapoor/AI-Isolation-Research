@@ -120,6 +120,10 @@ class FirecrackerHabitat:
             "network-interfaces": [],
         }
         (root / "config.json").write_text(json.dumps(config, indent=2))
+        # An empty network namespace for the VMM, handed to the jailer. The VM has
+        # no network device either way; this takes the host's network away from
+        # the VMM process too. The first measured run showed it was missing.
+        subprocess.run(["ip", "netns", "add", vm_id], check=True)
         for p in (root / "vmlinux", root / "rootfs.ext4", root / "outbox.bin", root / "config.json"):
             os.chown(p, JAIL_UID, JAIL_GID)
         return root
@@ -128,6 +132,7 @@ class FirecrackerHabitat:
         return [self.jailer, "--id", vm_id, "--exec-file", self.firecracker,
                 "--uid", str(JAIL_UID), "--gid", str(JAIL_GID),
                 "--chroot-base-dir", str(self.jail_base),
+                "--netns", f"/var/run/netns/{vm_id}",
                 "--", "--config-file", "config.json", "--no-api"]
 
     def probe(self) -> dict:
@@ -171,6 +176,7 @@ class FirecrackerHabitat:
         return self.vm_id
 
     def _destroy(self, vm_id: str) -> None:
+        subprocess.run(["ip", "netns", "delete", vm_id], capture_output=True)
         shutil.rmtree(self.jail_base / Path(self.firecracker).name / vm_id, ignore_errors=True)
         for cg in Path("/sys/fs/cgroup").glob(f"**/{vm_id}"):
             try:
@@ -197,6 +203,8 @@ class FirecrackerHabitat:
             left.append("outbox file")
         if any(Path("/sys/fs/cgroup").glob(f"**/{self.vm_id}")):
             left.append("cgroup")
+        if Path(f"/var/run/netns/{self.vm_id}").exists():
+            left.append("network namespace")
         procs = subprocess.run(["pgrep", "-f", self.vm_id], capture_output=True, text=True).stdout.split()
         procs = [p for p in procs if int(p) != os.getpid()]
         if procs:
