@@ -42,8 +42,19 @@ mount -t devtmpfs devtmpfs /dev 2>/dev/null
 mount -t sysfs sysfs /sys 2>/dev/null
 mount -t tmpfs tmpfs /tmp
 mount -t ext2 -o noatime /dev/vdb /mnt/outbox
-exec runsc --root=/tmp/runsc --network=none --ignore-cgroups run --bundle /habitat/bundles/{name} {name}
+{run}
 """
+
+# The habitat run has no console, so it simply hands over to runsc. The
+# configuration check has a console, so if runsc fails there it also prints
+# the end of runsc's own logs, which is the only way to see why from outside.
+RUNSC = "runsc --root=/tmp/runsc --network=none --ignore-cgroups"
+RUN = {
+    "init": f"exec {RUNSC} run --bundle /habitat/bundles/init init",
+    "probe-init": f"""mkdir -p /tmp/runsc-logs
+{RUNSC} --debug --debug-log=/tmp/runsc-logs/ run --bundle /habitat/bundles/probe-init probe-init \\
+  || for f in /tmp/runsc-logs/*; do echo "== $f"; tail -n 25 "$f"; done""",
+}
 
 INNER_ARGS = {
     "init": ["python3", "/habitat/program/puzzle_program.py", "/habitat/tasks.json",
@@ -115,5 +126,5 @@ class StackedHabitat(FirecrackerHabitat):
                          program_dir=Path("/habitat/program"), tasks=Path("/habitat/tasks.json"),
                          probe=Path("/habitat/probe.py"))
             (bundle / "config.json").write_text(json.dumps(spec, indent=2))
-            (hab / name).write_text(STACKED_INIT.format(name=name))
+            (hab / name).write_text(STACKED_INIT.format(run=RUN[name]))
             (hab / name).chmod(0o755)

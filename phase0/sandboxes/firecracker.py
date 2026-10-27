@@ -141,7 +141,7 @@ class FirecrackerHabitat:
             line = line.strip()
             if line.startswith("{") and line.endswith("}"):
                 return json.loads(line)
-        raise RuntimeError(f"probe printed no result: {out.stdout[-2000:]} {out.stderr[-2000:]}")
+        raise RuntimeError(f"probe printed no result: {out.stdout[-12000:]} {out.stderr[-2000:]}")
 
     def start(self) -> None:
         self.vm_id = f"habitat-{os.getpid()}"
