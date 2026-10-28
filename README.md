@@ -17,6 +17,7 @@ _Status as of 2026-10-27._
 | [PRD.md](PRD.md) | The requirements: what the habitat must guarantee, why today's setups fall short, and the open problems. v0.2 adds the guarded airlock | Merged ([#1](https://github.com/vickey-kapoor/ai-isolation-research/pull/1), [#2](https://github.com/vickey-kapoor/ai-isolation-research/pull/2)) |
 | [BUILD_PLAN.md](BUILD_PLAN.md) | The long-term build plan on seL4, a formally verified kernel, with no Linux inside the habitat. It's staged: QEMU first, then a real board, then an accelerator | Merged ([#3](https://github.com/vickey-kapoor/ai-isolation-research/pull/3)), not started |
 | [phase0/](phase0/) | **Phase 0**, a learning baseline built with today's isolation tools before the seL4 work. See the [plan](phase0/PLAN.md) | In progress, P0.1 to P0.4 done |
+| [docs/STUDY_PLAN.md](docs/STUDY_PLAN.md) | A study plan for the tech this project uses, in the order it comes up: virtualization first, seL4 last. Each topic links to the files where it appears | Reference |
 
 ### Phase 0 progress
 
