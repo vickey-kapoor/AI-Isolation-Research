@@ -14,8 +14,8 @@ _Status as of 2026-10-27._
 
 | Piece | What it is | Status |
 |---|---|---|
-| [PRD.md](PRD.md) | The requirements: what the habitat must guarantee, why today's setups fall short, and the open problems. v0.2 adds the guarded airlock | Merged ([#1](https://github.com/vickey-kapoor/ai-isolation-research/pull/1), [#2](https://github.com/vickey-kapoor/ai-isolation-research/pull/2)) |
-| [BUILD_PLAN.md](BUILD_PLAN.md) | The long-term build plan on seL4, a formally verified kernel, with no Linux inside the habitat. It's staged: QEMU first, then a real board, then an accelerator | Merged ([#3](https://github.com/vickey-kapoor/ai-isolation-research/pull/3)), not started |
+| [docs/PRD.md](docs/PRD.md) | The requirements: what the habitat must guarantee, why today's setups fall short, and the open problems. v0.2 adds the guarded airlock | Merged ([#1](https://github.com/vickey-kapoor/ai-isolation-research/pull/1), [#2](https://github.com/vickey-kapoor/ai-isolation-research/pull/2)) |
+| [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) | The long-term build plan on seL4, a formally verified kernel, with no Linux inside the habitat. It's staged: QEMU first, then a real board, then an accelerator | Merged ([#3](https://github.com/vickey-kapoor/ai-isolation-research/pull/3)), not started |
 | [phase0/](phase0/) | **Phase 0**, a learning baseline built with today's isolation tools before the seL4 work. See the [plan](phase0/PLAN.md) | In progress, P0.1 to P0.4 done |
 | [docs/STUDY_PLAN.md](docs/STUDY_PLAN.md) | A study plan for the tech this project uses, in the order it comes up: virtualization first, seL4 last. Each topic links to the files where it appears | Reference |
 
@@ -67,7 +67,7 @@ These words have one meaning each here, to avoid misreading. The full table is i
 | Word | Meaning | Not |
 |---|---|---|
 | **ASI**, **the resident** | The hypothetical superintelligence the PRD is about | Anything in this repository |
-| **Puzzle program** | `phase0/puzzle_program/puzzle_program.py`: an ordinary Python program of about 125 lines that factors numbers and solves sudokus. It's the stand-in for the resident. BUILD_PLAN.md calls its seL4 counterpart the "toy agent"; that's the same idea, and also not an AI | An AI, a model, or anything that learns or has goals |
+| **Puzzle program** | `phase0/puzzle_program/puzzle_program.py`: an ordinary Python program of about 125 lines that factors numbers and solves sudokus. It's the stand-in for the resident. [BUILD_PLAN.md](docs/BUILD_PLAN.md) calls its seL4 counterpart the "toy agent"; that's the same idea, and also not an AI | An AI, a model, or anything that learns or has goals |
 | **Sandbox** | Software that confines a program: gVisor and Firecracker here | A proven boundary |
 | **Habitat** | In the PRD, the full sealed environment. In Phase 0 code, one sandbox plus its outbox | The same thing in both places. The Phase 0 version is far weaker |
 | **Airlock** | The outside code that reads the outbox, checks answers and holds them in quarantine | A two-way channel |
@@ -78,8 +78,10 @@ These words have one meaning each here, to avoid misreading. The full table is i
 ## Layout
 
 ```
-PRD.md                 requirements (v0.2)
-BUILD_PLAN.md          seL4 build plan (later phase)
+docs/
+  PRD.md               requirements (v0.2)
+  BUILD_PLAN.md        seL4 build plan (later phase)
+  STUDY_PLAN.md        what to learn, in order
 phase0/                learning baseline
   PLAN.md              plan, six questions, milestones
   README.md            how to run, full glossary

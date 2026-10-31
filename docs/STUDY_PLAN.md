@@ -23,7 +23,7 @@ This is the one topic that explains every Phase 0 result. A container shares the
 - [`phase0/notes/P0.3-firecracker.md`](../phase0/notes/P0.3-firecracker.md): the puzzle program inside its own small VM, with the jailer around Firecracker.
 - [`phase0/notes/P0.4-stacked.md`](../phase0/notes/P0.4-stacked.md): gVisor inside a Firecracker VM, two walls in a row.
 - [`phase0/infra/gcp/`](../phase0/infra/gcp/): why the cloud VM needs nested virtualization (Firecracker needs `/dev/kvm`).
-- [`BUILD_PLAN.md`](../BUILD_PLAN.md) section 3.2: why the final habitat drops all three in favour of seL4.
+- [`BUILD_PLAN.md`](BUILD_PLAN.md) section 3.2: why the final habitat drops all three in favour of seL4.
 
 **Study path**
 
@@ -126,7 +126,7 @@ These ideas outlast any one tool, and they're how you'll judge every design choi
 
 **Where it shows up here**
 
-- [`PRD.md`](../PRD.md): the five layers and the guarded, verify-only airlock.
+- [`PRD.md`](PRD.md): the five layers and the guarded, verify-only airlock.
 - [`phase0/airlock/`](../phase0/airlock/): least privilege and fail-closed in practice (fixed frames, a budget that only shrinks, a log you can't quietly edit, approvals that need several stewards).
 - `phase0/notes/findings.md` in the project's shared files (not in this repo): what Phase 0 has learned so far about each wall.
 - `research_notes/` in the project's shared files: the literature on boxing and on hidden (covert) channels.
@@ -147,7 +147,7 @@ This is the hard part, which is why it comes last. The final habitat has no Linu
 
 **Where it shows up here**
 
-- [`BUILD_PLAN.md`](../BUILD_PLAN.md) section 3: seL4 with MCS, the Microkit framework, AArch64 on QEMU `virt`, Rust via the `rust-sel4` crates.
+- [`BUILD_PLAN.md`](BUILD_PLAN.md) section 3: seL4 with MCS, the Microkit framework, AArch64 on QEMU `virt`, Rust via the `rust-sel4` crates.
 - `BUILD_PLAN.md` section 5: the protection domains (compartments) and the system description sketch.
 - `BUILD_PLAN.md` section 8.3: what the proofs cover here and what they don't.
 
