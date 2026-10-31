@@ -1,6 +1,9 @@
-# ai-isolation-research
+# AI Isolation Research
 
-💻 AI Isolation v0.1 research
+**Sealed-habitat research for containing an assumed artificial superintelligence.**
+A one-way guarded airlock, prototyped behind gVisor, Firecracker and both stacked, with a long-term build plan on seL4.
+
+[![Phase 0 checks](https://github.com/vickey-kapoor/AI-Isolation-Research/actions/workflows/phase0.yml/badge.svg)](https://github.com/vickey-kapoor/AI-Isolation-Research/actions/workflows/phase0.yml)
 
 Design and prototype work for a **sealed habitat**: an environment built to hold an assumed artificial superintelligence (ASI). It holds everything the ASI needs to function, and lets work out only through one guarded, outward-only **airlock**. The premise is that ASI already exists. How it got here is out of scope.
 
