@@ -30,6 +30,7 @@ from pathlib import Path
 
 from airlock import outbox
 
+from . import inventory
 from .firecracker import FirecrackerHabitat, build_rootfs
 from .gvisor import _spec
 
@@ -107,6 +108,10 @@ class StackedHabitat(FirecrackerHabitat):
 
     def reader(self) -> outbox.Reader:
         return outbox.Reader(self.outbox_path, offset=self.outbox_offset, slots=self.slots)
+
+    def components(self) -> list[dict]:
+        return super().components() + [
+            inventory.component("gVisor (runsc and its helpers), inside the VM", self.gvisor_dir)]
 
     def _build_rootfs(self, base: Path) -> None:
         build_rootfs(base, self.rootfs, size_mb=1024, extra=self._add_gvisor)

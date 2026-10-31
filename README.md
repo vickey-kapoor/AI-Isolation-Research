@@ -30,7 +30,7 @@ Phase 0 builds a small working version of the habitat's shape with gVisor and Fi
 | **P0.3 Firecracker** | The puzzle program runs in a Firecracker virtual machine under the jailer. It has two disks (read-only inputs, and the outbox) and no network, console or shared folders | Done ([note](phase0/notes/P0.3-firecracker.md)) | GitHub's automated checks, and once on a Google Cloud VM created with the Terraform below (2026-10-26) |
 | **P0.4 Stacked** | gVisor inside the Firecracker VM: two different kinds of wall in a row, and a side-by-side comparison of all three | Done ([note](phase0/notes/P0.4-stacked.md)) | GitHub's automated checks only. Not yet run on Google Cloud |
 | **P0.S seL4 taster** | A small seL4 example on the QEMU emulator, to learn the end-state concepts early | Next | |
-| **P0.5 Findings** | Written answers to the six questions, and proposed changes to the PRD and the build plan | Later | |
+| **P0.5 Findings** | Written answers to the six questions, and proposed changes to the PRD and the build plan | Draft: Q1 to Q5 answered ([findings](phase0/notes/findings.md)), Q6 waits for the seL4 taster | GitHub's automated checks, Claude's cloud machine |
 
 **Early findings so far** (details in the notes):
 - The puzzle program still controls *which* answers get out first when the budget is full. A fix is for the outside to fix the order.
@@ -39,6 +39,9 @@ Phase 0 builds a small working version of the habitat's shape with gVisor and Fi
 - Firecracker's lack of shared folders matches the PRD's "inputs fixed before sealing" rule closely.
 - Stacking gVisor inside Firecracker cost about 0.1 s more start time and four times the VM memory. The airlock worked unchanged behind one wall, a different wall, and both.
 - Debugging a sealed box needs a planned way to see in, and that way must not exist in the sealed run.
+- If the outside fixes the order and timing in which answers leave (an "agenda"), the inside's choice shrinks from over 19 bits to at most one yes/no per task.
+- The answer checker runs fine in a gVisor box of its own (about 0.1 ms per answer), but its real weight is the Python runtime under it.
+- Measuring, not assuming, showed the jailed Firecracker process was still on the host's network. It now gets an empty network namespace.
 
 Every Phase 0 sandbox still relies on the host's unverified Linux kernel. Phase 0 measures how far short that falls of the PRD's bar. It's not meant to meet it.
 
@@ -51,6 +54,8 @@ Every Phase 0 sandbox still relies on the host's unverified Linux kernel. Phase 
   - the full gVisor run
   - the full Firecracker run
   - the full stacked run (gVisor inside Firecracker)
+  - the answer checker in its own gVisor sandbox
+  - a side-by-side comparison of all of them, with what each relies on
   - a Terraform check
 
 ---

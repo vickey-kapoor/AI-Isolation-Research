@@ -25,6 +25,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from . import inventory
 from .common import PROGRAM_DIR, TASKS
 
 SANDBOX_DIR = Path(__file__).resolve().parent
@@ -104,6 +105,13 @@ class GVisorHabitat:
         self._runsc("create", f"--bundle={bundle}", self.id, check=True,
                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self._runsc("start", self.id, check=True)
+
+    def components(self) -> list[dict]:
+        runsc = shutil.which(self.base[0]) or self.base[0]
+        return [inventory.component("gVisor (runsc and its helpers)", Path(runsc).resolve().parent)]
+
+    def host_marker(self) -> str:
+        return self.id
 
     def kill_and_destroy(self) -> None:
         """Outside-only. Needs nothing from the puzzle program, and doesn't ask it."""

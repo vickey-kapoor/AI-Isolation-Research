@@ -36,6 +36,8 @@ jobs:
         run: ./sandboxes/setup_gvisor.sh "$RUNNER_TEMP/rootfs"
       - name: Run the habitat under gVisor
         run: sudo "$(which python)" -m sandboxes.run_gvisor --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/work"
+      - name: Run the verifier in its own gVisor sandbox (Q2)
+        run: sudo "$(which python)" -m sandboxes.run_verifier_box --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/verifier"
       - name: Show runsc logs on failure
         if: failure()
         run: sudo GVISOR_DEBUG=1 "$(which python)" -m sandboxes.run_gvisor --rootfs "$RUNNER_TEMP/rootfs" --work "$RUNNER_TEMP/work-debug" || sudo find "$RUNNER_TEMP/work-debug/runsc-logs" -type f -exec tail -n 40 {} +
@@ -105,3 +107,31 @@ jobs:
           name: stacked-report
           path: ${{ runner.temp }}/work/report.json
           if-no-files-found: ignore
+
+  compare:
+    needs: [gvisor, firecracker, stacked]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/reports
+      - name: Side-by-side comparison, with the no-sandbox control run here
+        run: |
+          python -m sandboxes.compare --control \
+            "$RUNNER_TEMP/reports/gvisor-report/report.json" \
+            "$RUNNER_TEMP/reports/firecracker-report/report.json" \
+            "$RUNNER_TEMP/reports/stacked-report/report.json" \
+            --out "$RUNNER_TEMP/comparison.md"
+          cat "$RUNNER_TEMP/comparison.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: comparison
+          path: ${{ runner.temp }}/comparison.md

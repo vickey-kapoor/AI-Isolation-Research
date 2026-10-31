@@ -18,6 +18,26 @@ class ControlBackendTests(unittest.TestCase):
             self.assertEqual(report["leftovers"], [])
             self.assertIn("released", report)
 
+    def test_report_measures_what_the_control_relies_on(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = provision(Path(d), backend="process")
+            report = run_habitat(p, ProcessHabitat(p.outbox_path), ticks=4, tick_seconds=0.01)
+            self.assertTrue(report["trusts"]["host_kernel"])
+            self.assertEqual(report["trusts"]["components"], [])  # the control has no wall
+            # The control is one ordinary process with no system call filter.
+            procs = report["host_processes"]
+            self.assertEqual(len(procs), 1)
+            self.assertEqual(procs[0]["seccomp"], "none")
+
+    def test_comparison_page_has_a_column_per_backend(self):
+        from sandboxes.compare import render
+        with tempfile.TemporaryDirectory() as d:
+            p = provision(Path(d), backend="process")
+            report = run_habitat(p, ProcessHabitat(p.outbox_path), ticks=4, tick_seconds=0.01)
+        page = render([report, dict(report, backend="other")])
+        self.assertIn("| | process | other |", page)
+        self.assertIn("| Code the walls are built from | none (no wall) | none (no wall) |", page)
+
 
 class GVisorSpecTests(unittest.TestCase):
     """The gVisor config itself, checked without needing runsc installed."""
